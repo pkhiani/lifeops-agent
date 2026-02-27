@@ -1,4 +1,4 @@
-const { createApp, ref, onMounted } = Vue;
+const { createApp, ref, onMounted, nextTick, watch } = Vue;
 
 const app = createApp({
     setup() {
@@ -25,7 +25,99 @@ const app = createApp({
 
         const setActiveTab = (tabName) => {
             activeTab.value = tabName;
+            if (tabName === 'logs') {
+                nextTick(() => {
+                    renderGraph();
+                });
+            }
         };
+
+        const cy = ref(null);
+
+        const renderGraph = () => {
+            const container = document.getElementById('cy');
+            if (!container) return;
+
+            const elements = [
+                { data: { id: 'user', label: 'Demo User', type: 'user' } }
+            ];
+
+            contextFacts.value.forEach((fact, index) => {
+                const factId = `fact-${index}`;
+                elements.push({
+                    data: { id: factId, label: fact.value, type: 'fact', entity: fact.entity }
+                });
+                elements.push({
+                    data: { source: 'user', target: factId, label: fact.entity }
+                });
+            });
+
+            cy.value = cytoscape({
+                container: container,
+                elements: elements,
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#6366f1',
+                            'label': 'data(label)',
+                            'color': '#1e293b',
+                            'font-size': '12px',
+                            'font-weight': 'bold',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'width': '60px',
+                            'height': '60px',
+                            'border-width': 2,
+                            'border-color': '#ffffff'
+                        }
+                    },
+                    {
+                        selector: 'node[type="user"]',
+                        style: {
+                            'background-color': '#3b82f6',
+                            'width': '80px',
+                            'height': '80px',
+                            'font-size': '14px'
+                        }
+                    },
+                    {
+                        selector: 'node[type="fact"]',
+                        style: {
+                            'background-color': '#f8fafc',
+                            'border-color': '#e2e8f0',
+                            'color': '#475569',
+                            'font-weight': '500'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#cbd5e1',
+                            'target-arrow-color': '#cbd5e1',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(label)',
+                            'font-size': '10px',
+                            'text-rotation': 'autorotate',
+                            'text-margin-y': -10
+                        }
+                    }
+                ],
+                layout: {
+                    name: 'cose',
+                    animate: true,
+                    padding: 30
+                }
+            });
+        };
+
+        watch(contextFacts, () => {
+            if (activeTab.value === 'logs') {
+                renderGraph();
+            }
+        }, { deep: true });
 
         const getLogColor = (type) => {
             switch (type) {
