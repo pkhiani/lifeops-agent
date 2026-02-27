@@ -30,7 +30,8 @@ driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 # In-memory mock DB for MVP (Tasks only for now)
 MOCK_USER_STATE = {
     "inferred_tasks": [],
-    "activity_logs": []
+    "activity_logs": [],
+    "api_calls": []
 }
 
 class ContextFact(BaseModel):
@@ -40,6 +41,14 @@ class ContextFact(BaseModel):
 @app.get("/")
 def read_root():
     return {"status": "LifeOps Agent Backend Running"}
+
+def record_api_call(service_name: str, endpoint: str):
+    """Record an API call in the mock user state."""
+    MOCK_USER_STATE["api_calls"].append({
+        "service": service_name,
+        "endpoint": endpoint,
+        "timestamp": os.getenv("CURRENT_TIME", "Just now") # Mock timestamp
+    })
 
 def get_yutori_links(task_title: str, context: str) -> List[dict]:
     """Call Yutori Browsing API to find official links for a task."""
@@ -58,6 +67,8 @@ def get_yutori_links(task_title: str, context: str) -> List[dict]:
         "instruction": f"Find official government or organizational links and a brief description for the following task: '{task_title}' given this context: '{context}'. Return only a JSON array of objects with 'title' and 'url' fields.",
         "require_auth": False
     }
+
+    record_api_call("Yutori", url)
 
     try:
         # Note: In a real scenario, this might take time. 
@@ -99,6 +110,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
     # Read the file content
     content = await file.read()
     
+    record_api_call("Modulate", url)
+
     # Send the formData request identical to user's requested curl format
     # We rename to audio.wav to help the Modulate API parse the raw webm blob if it's strict on extensions
     files = {"upload_file": ("audio.wav", content, "audio/wav")}
@@ -205,7 +218,8 @@ def get_user_state():
     return {
         "context_facts": context_facts,
         "inferred_tasks": MOCK_USER_STATE["inferred_tasks"],
-        "activity_logs": MOCK_USER_STATE["activity_logs"]
+        "activity_logs": MOCK_USER_STATE["activity_logs"],
+        "api_calls": MOCK_USER_STATE["api_calls"]
     }
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ const app = createApp({
     setup() {
         const agentStatus = ref('idle'); // idle, listening, processing
         const agentStatusText = ref('Assistant Ready');
-        const activeTab = ref('dashboard'); // dashboard, microphone, context, tasks, logs
+        const activeTab = ref('landing'); // landing, dashboard, microphone, context, tasks, logs
         const isRecording = ref(false);
         const recordingText = ref('Tap to speak to your assistant');
         const transcript = ref('');
@@ -12,6 +12,7 @@ const app = createApp({
         const contextFacts = ref([]);
         const tasks = ref([]);
         const activityLogs = ref([]);
+        const apiCalls = ref([]);
 
         let mediaRecorder = null;
         let audioChunks = [];
@@ -42,13 +43,26 @@ const app = createApp({
                 { data: { id: 'user', label: 'Demo User', type: 'user' } }
             ];
 
+            // Add Context Fact nodes
             contextFacts.value.forEach((fact, index) => {
                 const factId = `fact-${index}`;
                 elements.push({
                     data: { id: factId, label: fact.value, type: 'fact', entity: fact.entity }
                 });
                 elements.push({
-                    data: { source: 'user', target: factId, label: fact.entity }
+                    data: { source: 'user', target: factId, label: fact.entity, type: 'fact-edge' }
+                });
+            });
+
+            // Add API Call nodes
+            const uniqueServices = [...new Set(apiCalls.value.map(call => call.service))];
+            uniqueServices.forEach(service => {
+                const serviceId = `service-${service.toLowerCase()}`;
+                elements.push({
+                    data: { id: serviceId, label: `${service} API`, type: 'service' }
+                });
+                elements.push({
+                    data: { source: 'user', target: serviceId, label: 'Called', type: 'service-edge' }
                 });
             });
 
@@ -62,12 +76,13 @@ const app = createApp({
                             'background-color': '#6366f1',
                             'label': 'data(label)',
                             'color': '#1e293b',
-                            'font-size': '12px',
+                            'font-size': '10px',
                             'font-weight': 'bold',
-                            'text-valign': 'center',
+                            'text-valign': 'bottom',
                             'text-halign': 'center',
-                            'width': '60px',
-                            'height': '60px',
+                            'text-margin-y': 4,
+                            'width': '40px',
+                            'height': '40px',
                             'border-width': 2,
                             'border-color': '#ffffff'
                         }
@@ -76,9 +91,10 @@ const app = createApp({
                         selector: 'node[type="user"]',
                         style: {
                             'background-color': '#3b82f6',
-                            'width': '80px',
-                            'height': '80px',
-                            'font-size': '14px'
+                            'width': '60px',
+                            'height': '60px',
+                            'font-size': '12px',
+                            'text-valign': 'center'
                         }
                     },
                     {
@@ -91,6 +107,15 @@ const app = createApp({
                         }
                     },
                     {
+                        selector: 'node[type="service"]',
+                        style: {
+                            'background-color': '#f59e0b', // Amber for services
+                            'border-color': '#fbbf24',
+                            'color': '#92400e',
+                            'shape': 'diamond'
+                        }
+                    },
+                    {
                         selector: 'edge',
                         style: {
                             'width': 2,
@@ -99,21 +124,29 @@ const app = createApp({
                             'target-arrow-shape': 'triangle',
                             'curve-style': 'bezier',
                             'label': 'data(label)',
-                            'font-size': '10px',
+                            'font-size': '8px',
                             'text-rotation': 'autorotate',
-                            'text-margin-y': -10
+                            'text-margin-y': -8
+                        }
+                    },
+                    {
+                        selector: 'edge[type="service-edge"]',
+                        style: {
+                            'line-style': 'dashed',
+                            'line-color': '#f59e0b'
                         }
                     }
                 ],
                 layout: {
                     name: 'cose',
                     animate: true,
-                    padding: 30
+                    padding: 30,
+                    componentSpacing: 100
                 }
             });
         };
 
-        watch(contextFacts, () => {
+        watch([contextFacts, apiCalls], () => {
             if (activeTab.value === 'logs') {
                 renderGraph();
             }
@@ -272,6 +305,7 @@ const app = createApp({
 
                     addLog('Updated your personal profile safely.', 'system');
                     contextFacts.value = agentData.context_facts;
+                    apiCalls.value = agentData.api_calls || [];
 
                     agentStatusText.value = 'Finding Action Items...';
 
@@ -324,7 +358,7 @@ const app = createApp({
         return {
             agentStatus, agentStatusText, activeTab,
             isRecording, recordingText, transcript, liveTranscript,
-            contextFacts, tasks, activityLogs,
+            contextFacts, tasks, activityLogs, apiCalls,
             toggleRecording, getLogColor, getStatusBadgeClass, setActiveTab, submitTaskForm
         };
     }
