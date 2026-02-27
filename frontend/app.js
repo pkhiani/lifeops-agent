@@ -89,7 +89,7 @@ const app = createApp({
             }
         };
 
-        const BACKEND_URL = 'https://lifeops-backend.onrender.com'; // Change this if Render URL is different
+        const BACKEND_URL = 'https://lifeops-agent.onrender.com'; // Change this if Render URL is different
 
         const processAudio = async (audioBlob) => {
             addLog('Uploading audio to orchestration service...', 'system');
