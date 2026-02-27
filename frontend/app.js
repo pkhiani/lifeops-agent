@@ -8,12 +8,14 @@ const app = createApp({
         const isRecording = ref(false);
         const recordingText = ref('Tap to speak to your assistant');
         const transcript = ref('');
+        const liveTranscript = ref(''); // Added for true live streaming
         const contextFacts = ref([]);
         const tasks = ref([]);
         const activityLogs = ref([]);
 
         let mediaRecorder = null;
         let audioChunks = [];
+        let speechRecognition = null;
 
         const addLog = (message, type = 'info') => {
             const now = new Date();
@@ -61,11 +63,37 @@ const app = createApp({
                     await processAudio(audioBlob);
                 };
 
+                // Initialize Live Speech Recognition
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (SpeechRecognition) {
+                    speechRecognition = new SpeechRecognition();
+                    speechRecognition.continuous = true;
+                    speechRecognition.interimResults = true;
+
+                    speechRecognition.onresult = (event) => {
+                        let final = '';
+                        let interim = '';
+                        for (let i = event.resultIndex; i < event.results.length; ++i) {
+                            if (event.results[i].isFinal) {
+                                final += event.results[i][0].transcript;
+                            } else {
+                                interim += event.results[i][0].transcript;
+                            }
+                        }
+                        // Update the text box live!
+                        liveTranscript.value = final + interim;
+                        transcript.value = liveTranscript.value;
+                    };
+                    speechRecognition.start();
+                }
+
                 mediaRecorder.start();
                 isRecording.value = true;
                 agentStatus.value = 'listening';
                 agentStatusText.value = 'Listening...';
                 recordingText.value = 'Recording... tap to stop';
+                liveTranscript.value = ''; // Reset UI
+                transcript.value = '';
                 addLog('Started listening securely.', 'system');
             } catch (err) {
                 console.error("Error accessing microphone:", err);
@@ -77,6 +105,11 @@ const app = createApp({
         const stopRecording = () => {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
+
+                if (speechRecognition) {
+                    speechRecognition.stop();
+                }
+
                 isRecording.value = false;
                 agentStatus.value = 'processing';
                 agentStatusText.value = 'Thinking...';
@@ -183,7 +216,7 @@ const app = createApp({
 
         return {
             agentStatus, agentStatusText, activeTab,
-            isRecording, recordingText, transcript,
+            isRecording, recordingText, transcript, liveTranscript,
             contextFacts, tasks, activityLogs,
             toggleRecording, getLogColor, getStatusBadgeClass, setActiveTab
         };
