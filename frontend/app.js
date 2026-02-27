@@ -3,10 +3,10 @@ const { createApp, ref, onMounted } = Vue;
 const app = createApp({
     setup() {
         const agentStatus = ref('idle'); // idle, listening, processing
-        const agentStatusText = ref('System Idle');
+        const agentStatusText = ref('Assistant Ready');
         const activeTab = ref('dashboard'); // dashboard, microphone, context, tasks, logs
         const isRecording = ref(false);
-        const recordingText = ref('Tap to speak');
+        const recordingText = ref('Tap to speak to your assistant');
         const transcript = ref('');
         const contextFacts = ref([]);
         const tasks = ref([]);
@@ -66,10 +66,10 @@ const app = createApp({
                 agentStatus.value = 'listening';
                 agentStatusText.value = 'Listening...';
                 recordingText.value = 'Recording... tap to stop';
-                addLog('Microphone started.', 'system');
+                addLog('Started listening securely.', 'system');
             } catch (err) {
                 console.error("Error accessing microphone:", err);
-                addLog('Microphone access denied or error.', 'error');
+                addLog('Microphone access denied. Please allow it to speak with the assistant.', 'error');
                 alert('Please allow microphone access to use the voice features.');
             }
         };
@@ -79,10 +79,10 @@ const app = createApp({
                 mediaRecorder.stop();
                 isRecording.value = false;
                 agentStatus.value = 'processing';
-                agentStatusText.value = 'Agent Reasoning...';
-                recordingText.value = 'Processing audio...';
+                agentStatusText.value = 'Thinking...';
+                recordingText.value = 'Calling your assistant...';
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                addLog('Audio capture stopped. Sending to agent...', 'system');
+                addLog('Audio captured. Sending to your assistant...', 'system');
             }
         };
 
@@ -97,11 +97,11 @@ const app = createApp({
         const BACKEND_URL = 'https://lifeops-agent.onrender.com'; // Updated to actual Render URL
 
         const processAudio = async (audioBlob) => {
-            addLog('Uploading audio to orchestration service...', 'system');
+            addLog('Uploading your request securely...', 'system');
 
             try {
                 // 1. Transcribe
-                addLog('Transcribing audio via Modulate API...', 'system');
+                addLog('Converting audio to text...', 'system');
                 let transcribedText = "";
 
                 try {
@@ -114,15 +114,15 @@ const app = createApp({
                     const transcribeData = await transcribeRes.json();
                     transcribedText = transcribeData.text;
                 } catch (e) {
-                    addLog('Transcription API failed. Falling back to mock data...', 'warning');
+                    addLog('Audio processing temporarily unavailable. Using demo text...', 'warning');
                     transcribedText = "I moved here three months ago and just started working a new job in California. I don't know what forms I need.";
                 }
 
                 transcript.value = transcribedText;
-                addLog(`Transcribed: "${transcribedText}"`, 'agent');
+                addLog(`You said: "${transcribedText}"`, 'agent');
 
                 // 2. Process via Agent (Real API Call pointing to our FastAPI)
-                addLog('Sending text to Yutori LLM Agent for reasoning...', 'system');
+                addLog('Understanding your unique situation...', 'system');
                 try {
                     // We attempt to hit the backend. If it's down (like during dev without python), we fallback.
                     const agentRes = await fetch(`${BACKEND_URL}/agent/process?text=${encodeURIComponent(transcribedText)}`, {
@@ -134,20 +134,20 @@ const app = createApp({
 
                     const agentData = await agentRes.json();
 
-                    addLog('Graph Updated: User context persistent.', 'system');
+                    addLog('Updated your personal profile safely.', 'system');
                     contextFacts.value = agentData.context_facts;
 
-                    agentStatusText.value = 'Inferring Tasks...';
+                    agentStatusText.value = 'Finding Action Items...';
 
                     // Add reasoning logs based on tasks
                     agentData.inferred_tasks.forEach(t => {
-                        addLog(`Reasoning inferred task: ${t.title}`, 'agent');
+                        addLog(`Found recommended action: ${t.title}`, 'agent');
                     });
 
                     tasks.value = agentData.inferred_tasks;
 
                 } catch (apiError) {
-                    addLog('Backend API unreachable. Falling back to frontend mock...', 'warning');
+                    addLog('Service unreachable. Falling back to demo mode...', 'warning');
                     // Fallback Mock Extraction
                     contextFacts.value = [
                         { entity: 'Arrival', value: '3 months ago' },
@@ -163,22 +163,22 @@ const app = createApp({
                 }
 
                 agentStatus.value = 'idle';
-                agentStatusText.value = 'System Idle';
+                agentStatusText.value = 'Assistant Ready';
                 recordingText.value = 'Tap to speak again';
-                addLog('Autonomy Cycle Complete. Awaiting execution triggers.', 'system');
+                addLog('Finished processing. Ready for your next request.', 'system');
 
             } catch (err) {
                 console.error(err);
-                addLog('Error processing pipeline.', 'error');
+                addLog('Sorry, something went wrong processing your request.', 'error');
                 agentStatus.value = 'idle';
-                agentStatusText.value = 'System Idle';
+                agentStatusText.value = 'Assistant Ready';
                 recordingText.value = 'Tap to speak again';
             }
         };
 
         onMounted(() => {
-            addLog('LifeOps Agent initialized.', 'system');
-            addLog('Awaiting voice input...', 'system');
+            addLog('Your assistant is ready securely.', 'system');
+            addLog('Waiting for you to speak...', 'system');
         });
 
         return {

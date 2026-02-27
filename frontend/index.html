@@ -112,9 +112,9 @@
             <div class="p-6 border-b border-slate-200/50">
                 <h1
                     class="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-emerald-500 flex items-center gap-2">
-                    <i class="fas fa-robot text-blue-600"></i> LifeOps
+                    <i class="fas fa-compass text-blue-600"></i> LifeOps
                 </h1>
-                <p class="text-slate-500 text-xs mt-1 font-medium">Autonomous Task Agent</p>
+                <p class="text-slate-500 text-xs mt-1 font-medium">Personal Navigation Journey</p>
             </div>
 
             <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
@@ -126,20 +126,20 @@
                 <button @click="setActiveTab('tasks')"
                     :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'tasks' ? 'active shadow-sm' : '']">
                     <i class="fas fa-tasks w-6 text-center text-slate-400"></i>
-                    <span>Tasks</span>
-                    <span v-if="tasks.length > 0"
+                    <span>My Action Items</span>
+                    <span v-if="tasks.length"
                         class="ml-auto bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs font-bold">{{
                         tasks.length }}</span>
                 </button>
                 <button @click="setActiveTab('context')"
                     :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'context' ? 'active shadow-sm' : '']">
-                    <i class="fas fa-project-diagram w-6 text-center text-slate-400"></i>
-                    <span>Context Graph</span>
+                    <i class="fas fa-user-circle w-6 text-center text-slate-400"></i>
+                    <span>My Profile</span>
                 </button>
                 <button @click="setActiveTab('logs')"
                     :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'logs' ? 'active shadow-sm' : '']">
-                    <i class="fas fa-terminal w-6 text-center text-slate-400"></i>
-                    <span>System Logs</span>
+                    <i class="fas fa-history w-6 text-center text-slate-400"></i>
+                    <span>Journey Log</span>
                 </button>
             </nav>
 
@@ -156,7 +156,7 @@
                             </div>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-slate-800 leading-none">Agent Status</p>
+                            <p class="text-sm font-bold text-slate-800 leading-none">Assistant Status</p>
                             <p class="text-xs text-slate-500 font-medium mt-1">{{ agentStatusText }}</p>
                         </div>
                     </div>
@@ -172,7 +172,7 @@
                 <div v-if="activeTab === 'dashboard'" class="max-w-6xl mx-auto space-y-8">
                     <header class="mb-8">
                         <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Overview</h2>
-                        <p class="text-slate-500 mt-2">Manage your autonomous tasks and agent context.</p>
+                        <p class="text-slate-500 mt-2">Track your progress and talk to your assistant.</p>
                     </header>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -220,8 +220,8 @@
                             <div class="glass-panel rounded-3xl p-8 shadow-glass">
                                 <div class="flex items-center justify-between mb-6">
                                     <h3 class="text-lg font-bold flex items-center text-slate-700">
-                                        <i class="fas fa-tasks mr-3 text-emerald-500 bg-emerald-100 p-2 rounded-lg"></i>
-                                        Recent Tasks
+                                        <i class="fas fa-star mr-3 text-emerald-500 bg-emerald-100 p-2 rounded-lg"></i>
+                                        Recommended Actions for You
                                     </h3>
                                     <button @click="setActiveTab('tasks')"
                                         class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center group">
@@ -234,9 +234,9 @@
                                     class="text-center py-10 text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-300">
                                     <div
                                         class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-3">
-                                        <i class="fas fa-check-circle text-slate-300 text-xl"></i>
+                                        <i class="fas fa-smile text-slate-300 text-xl"></i>
                                     </div>
-                                    <p class="font-medium text-slate-500">No active tasks</p>
+                                    <p class="font-medium text-slate-500">You're all caught up!</p>
                                 </div>
 
                                 <div v-else class="space-y-4">
@@ -268,8 +268,8 @@
                                 <div class="flex items-center justify-between mb-6">
                                     <h3 class="text-lg font-bold flex items-center text-slate-700">
                                         <i
-                                            class="fas fa-project-diagram mr-3 text-indigo-500 bg-indigo-100 p-2 rounded-lg"></i>
-                                        Live Context
+                                            class="fas fa-clipboard-check mr-3 text-indigo-500 bg-indigo-100 p-2 rounded-lg"></i>
+                                        What we know about your situation
                                     </h3>
                                     <button @click="setActiveTab('context')"
                                         class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center group">
@@ -286,7 +286,7 @@
                                     </div>
                                     <div v-if="contextFacts.length === 0"
                                         class="text-sm font-medium text-slate-400 italic py-2">
-                                        Ready to extract facts from conversation...
+                                        Tell us more about yourself to get started...
                                     </div>
                                 </div>
                             </div>
@@ -300,8 +300,8 @@
                 <div v-scroll v-if="activeTab === 'tasks'" class="max-w-4xl mx-auto space-y-6">
                     <header class="mb-8 flex items-end justify-between border-b border-slate-200/50 pb-6">
                         <div>
-                            <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Inferred Tasks</h2>
-                            <p class="text-slate-500 mt-2">Actions autonomously generated based on your context.</p>
+                            <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Your Action Items</h2>
+                            <p class="text-slate-500 mt-2">Personalized steps generated based on your situation.</p>
                         </div>
                         <div class="text-right">
                             <span class="text-3xl font-black text-blue-600">{{ tasks.length }}</span>
@@ -313,11 +313,11 @@
                         class="text-center py-20 text-slate-400 glass-panel rounded-3xl border border-dashed border-slate-300">
                         <div
                             class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 mb-6 shadow-inner">
-                            <i class="fas fa-clipboard-list text-4xl text-slate-300"></i>
+                            <i class="fas fa-smile-beam text-4xl text-slate-300"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-slate-600 mb-2">No tasks available</h3>
-                        <p class="font-medium max-w-sm mx-auto">Tasks will appear here automatically when the agent
-                            determines actions are needed based on your input.</p>
+                        <h3 class="text-xl font-bold text-slate-600 mb-2">No action items right now</h3>
+                        <p class="font-medium max-w-sm mx-auto">Items will appear here automatically when your assistant
+                            determines actions are needed based on your profile.</p>
                     </div>
 
                     <div v-else class="space-y-4">
@@ -358,17 +358,17 @@
             <transition name="fade">
                 <div v-if="activeTab === 'context'" class="max-w-4xl mx-auto space-y-6">
                     <header class="mb-8 border-b border-slate-200/50 pb-6">
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Context Graph</h2>
-                        <p class="text-slate-500 mt-2">The agent's understanding of your situation.</p>
+                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">My Profile</h2>
+                        <p class="text-slate-500 mt-2">Everything we've securely recorded about your journey.</p>
                     </header>
 
                     <div class="glass-panel rounded-3xl p-8 lg:p-10 shadow-glass">
                         <div v-if="contextFacts.length === 0"
                             class="text-center py-16 text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-300">
-                            <i class="fas fa-network-wired text-5xl mb-4 text-slate-300"></i>
-                            <p class="font-medium text-lg text-slate-600 mb-1">Knowledge Graph Empty</p>
-                            <p class="text-sm max-w-sm mx-auto">Talk to the agent to build your persistent profile and
-                                context relationships.</p>
+                            <i class="fas fa-id-card text-5xl mb-4 text-slate-300"></i>
+                            <p class="font-medium text-lg text-slate-600 mb-1">Your profile is empty</p>
+                            <p class="text-sm max-w-sm mx-auto">Talk to your assistant to build your personal profile
+                                so we can help you better.</p>
                         </div>
 
                         <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -394,32 +394,27 @@
             <transition name="fade">
                 <div v-if="activeTab === 'logs'" class="max-w-5xl mx-auto space-y-6 h-full flex flex-col">
                     <header class="mb-4 shrink-0">
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">System Logs</h2>
-                        <p class="text-slate-500 mt-2">Real-time activity and reasoning trace.</p>
+                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Recent Activity</h2>
+                        <p class="text-slate-500 mt-2">A record of actions your assistant has taken.</p>
                     </header>
 
                     <div
-                        class="glass-panel rounded-3xl p-6 shadow-glass flex-1 min-h-[500px] flex flex-col relative overflow-hidden bg-slate-900 border-slate-800/50">
-                        <!-- Mac-like header -->
-                        <div class="flex items-center space-x-2 mb-6 shrink-0 relative z-10">
-                            <div class="w-3 h-3 rounded-full bg-red-500 shadow-sm"></div>
-                            <div class="w-3 h-3 rounded-full bg-amber-500 shadow-sm"></div>
-                            <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></div>
-                            <div class="ml-4 text-xs font-mono text-slate-400">agent-tty</div>
-                        </div>
-
+                        class="glass-panel rounded-3xl p-6 shadow-glass flex-1 min-h-[500px] flex flex-col relative overflow-hidden bg-white/80 border-slate-200/50 text-slate-700">
                         <div
-                            class="flex-1 overflow-y-auto font-mono text-xs sm:text-sm space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                            class="flex-1 overflow-y-auto font-sans text-sm space-y-3 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent pr-4">
                             <div v-for="(log, idx) in activityLogs" :key="idx"
-                                class="flex hover:bg-slate-800/50 p-1.5 rounded transition-colors group">
-                                <span class="text-slate-500 shrink-0 w-24">[{{ log.time }}]</span>
-                                <span class="text-blue-400 shrink-0 mr-3">~ ❯</span>
-                                <span
-                                    :class="getLogColor(log.type) === 'text-slate-600' ? 'text-slate-300' : (getLogColor(log.type) === 'text-blue-600' ? 'text-blue-300' : (getLogColor(log.type) === 'text-emerald-600' ? 'text-emerald-400' : (getLogColor(log.type) === 'text-amber-600' ? 'text-amber-400' : 'text-red-400')))"
-                                    class="flex-1 tracking-wide">{{ log.message }}</span>
+                                class="flex items-start p-3 bg-white rounded-xl shadow-sm border border-slate-100 transition-colors">
+                                <span class="text-slate-400 shrink-0 w-20 text-xs font-medium mt-0.5">{{ log.time
+                                    }}</span>
+                                <div class="flex-1">
+                                    <span
+                                        :class="getLogColor(log.type) === 'text-slate-600' ? 'text-slate-600' : (getLogColor(log.type) === 'text-blue-600' ? 'text-blue-600 font-medium' : (getLogColor(log.type) === 'text-emerald-600' ? 'text-emerald-600 font-medium' : (getLogColor(log.type) === 'text-amber-600' ? 'text-amber-600 font-medium' : 'text-red-600 font-bold')))"
+                                        class="tracking-wide">{{ log.message }}</span>
+                                </div>
                             </div>
-                            <div v-if="activityLogs.length === 0" class="text-slate-500 italic p-2 animate-pulse">
-                                Waiting for activity...</div>
+                            <div v-if="activityLogs.length === 0"
+                                class="text-slate-500 italic p-4 text-center bg-slate-50 rounded-xl">
+                                No activity yet...</div>
                         </div>
                     </div>
                 </div>

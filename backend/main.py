@@ -55,7 +55,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
     content = await file.read()
     
     # Send the formData request identical to user's requested curl format
-    files = {"upload_file": (file.filename or "audio.webm", content, file.content_type or "audio/webm")}
+    # We rename to audio.wav to help the Modulate API parse the raw webm blob if it's strict on extensions
+    files = {"upload_file": ("audio.wav", content, "audio/wav")}
     data = {
         "speaker_diarization": "true",
         "emotion_signal": "true"
@@ -73,7 +74,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
             
         return {
             "text": transcribed_text or str(result),
-            "status": "success"
+            "status": "success",
+            "debug_size_bytes": len(content)
         }
     except Exception as e:
         print(f"Modulate API Error: {str(e)}")
