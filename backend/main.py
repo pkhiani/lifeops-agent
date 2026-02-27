@@ -112,9 +112,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
     
     record_api_call("Modulate", url)
 
-    # Send the formData request identical to user's requested curl format
-    # We rename to audio.wav to help the Modulate API parse the raw webm blob if it's strict on extensions
-    files = {"upload_file": ("audio.wav", content, "audio/wav")}
+    # Use audio/webm as that is what the frontend provides
+    files = {"upload_file": ("audio.webm", content, "audio/webm")}
     data = {
         "speaker_diarization": "true",
         "emotion_signal": "true"
@@ -126,13 +125,19 @@ async def transcribe_audio(file: UploadFile = File(...)):
         result = response.json()
         
         # Parse the JSON matching the typical Modulate response
-        transcribed_text = result.get("text", "")
+        # Try different possible keys for the transcription text
+        transcribed_text = result.get("text")
+        if not transcribed_text and "utterances" in result:
+            # Join utterances if text is not directly present
+            transcribed_text = " ".join([u.get("text", "") for u in result["utterances"]])
+        
         if not transcribed_text and "results" in result:
             transcribed_text = str(result["results"])
             
         return {
-            "text": transcribed_text or str(result),
+            "text": transcribed_text or "",
             "status": "success",
+            "full_response": result if not transcribed_text else None, # Debug info if parsing fails
             "debug_size_bytes": len(content)
         }
     except Exception as e:
