@@ -4,6 +4,7 @@ const app = createApp({
     setup() {
         const agentStatus = ref('idle'); // idle, listening, processing
         const agentStatusText = ref('System Idle');
+        const activeTab = ref('dashboard'); // dashboard, microphone, context, tasks, logs
         const isRecording = ref(false);
         const recordingText = ref('Tap to speak');
         const transcript = ref('');
@@ -18,6 +19,10 @@ const app = createApp({
             const now = new Date();
             const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             activityLogs.value.unshift({ time: timeString, message, type });
+        };
+
+        const setActiveTab = (tabName) => {
+            activeTab.value = tabName;
         };
 
         const getLogColor = (type) => {
@@ -89,22 +94,29 @@ const app = createApp({
             }
         };
 
-        const BACKEND_URL = 'https://lifeops-agent.onrender.com'; // Change this if Render URL is different
+        const BACKEND_URL = 'https://lifeops-agent.onrender.com'; // Updated to actual Render URL
 
         const processAudio = async (audioBlob) => {
             addLog('Uploading audio to orchestration service...', 'system');
 
             try {
-                // 1. Transcribe (Mock API Call for now, would be formData in prod)
-                addLog('Transcribing audio via Modulate API (simulated latency for hackathon)...', 'system');
-                let transcribedText = "I moved here three months ago and just started working a new job in California. I don't know what forms I need.";
+                // 1. Transcribe
+                addLog('Transcribing audio via Modulate API...', 'system');
+                let transcribedText = "";
 
-                // Example of how the real call would look:
-                // const formData = new FormData();
-                // formData.append('file', audioBlob, 'real_audio.webm');
-                // const transcribeRes = await fetch(`${BACKEND_URL}/transcribe`, { method: 'POST', body: formData });
-                // const transcribeData = await transcribeRes.json();
-                // transcribedText = transcribeData.text;
+                try {
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'real_audio.webm');
+                    const transcribeRes = await fetch(`${BACKEND_URL}/transcribe`, { method: 'POST', body: formData });
+
+                    if (!transcribeRes.ok) throw new Error("Transcription failed");
+
+                    const transcribeData = await transcribeRes.json();
+                    transcribedText = transcribeData.text;
+                } catch (e) {
+                    addLog('Transcription API failed. Falling back to mock data...', 'warning');
+                    transcribedText = "I moved here three months ago and just started working a new job in California. I don't know what forms I need.";
+                }
 
                 transcript.value = transcribedText;
                 addLog(`Transcribed: "${transcribedText}"`, 'agent');
@@ -170,10 +182,10 @@ const app = createApp({
         });
 
         return {
-            agentStatus, agentStatusText,
+            agentStatus, agentStatusText, activeTab,
             isRecording, recordingText, transcript,
             contextFacts, tasks, activityLogs,
-            toggleRecording, getLogColor, getStatusBadgeClass
+            toggleRecording, getLogColor, getStatusBadgeClass, setActiveTab
         };
     }
 });

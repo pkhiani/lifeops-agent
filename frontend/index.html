@@ -15,9 +15,14 @@
                     colors: {
                         primary: '#3b82f6',
                         secondary: '#10b981',
+                        sidebar: '#ffffff',
+                        contentbg: '#f8fafc',
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
                     }
                 }
             }
@@ -28,6 +33,19 @@
 
         body {
             font-family: 'Inter', sans-serif;
+            background-image: radial-gradient(at 0% 0%, hsla(217, 100%, 97%, 1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(160, 100%, 97%, 1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(217, 100%, 97%, 1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(160, 100%, 97%, 1) 0px, transparent 50%);
+            background-color: #f8fafc;
+            background-attachment: fixed;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
 
         .recording-pulse {
@@ -50,125 +68,374 @@
                 box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
             }
         }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.3s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+
+        /* Sidebar Item Hover & Active Styles */
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-item:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+            color: #2563eb;
+            transform: translateX(4px);
+        }
+
+        .sidebar-item.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            border-right: 3px solid #3b82f6;
+            font-weight: 600;
+        }
+
+        .sidebar-item.active i {
+            color: #3b82f6;
+        }
     </style>
 </head>
 
-<body class="bg-slate-50 min-h-screen text-slate-800">
-    <div id="app" class="max-w-5xl mx-auto p-4 md:p-8">
-        <header class="flex justify-between items-center mb-12">
-            <div>
+<body class="text-slate-800 antialiased min-h-screen flex text-sm md:text-base">
+    <div id="app" class="flex flex-col md:flex-row w-full min-h-screen">
+
+        <!-- Sidebar -->
+        <aside
+            class="w-full md:w-64 glass-panel shadow-sm flex flex-col z-20 sticky top-0 md:h-screen shrink-0 border-r border-slate-200/60">
+            <div class="p-6 border-b border-slate-200/50">
                 <h1
-                    class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-emerald-600">
-                    LifeOps Agent</h1>
-                <p class="text-slate-500 text-sm mt-1">Autonomous government task assistant</p>
+                    class="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-emerald-500 flex items-center gap-2">
+                    <i class="fas fa-robot text-blue-600"></i> LifeOps
+                </h1>
+                <p class="text-slate-500 text-xs mt-1 font-medium">Autonomous Task Agent</p>
             </div>
-            <div class="flex items-center space-x-2">
-                <span class="w-3 h-3 rounded-full shadow-sm"
-                    :class="agentStatus === 'idle' ? 'bg-slate-400' : (agentStatus === 'listening' ? 'bg-red-500 recording-pulse' : 'bg-green-500')"></span>
-                <span class="text-sm font-medium text-slate-600">{{ agentStatusText }}</span>
-            </div>
-        </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Interaction & Graph -->
-            <div class="lg:col-span-1 space-y-6">
-                <!-- Voice Input Card -->
-                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-br from-blue-50 to-emerald-50 pointer-events-none opacity-50">
-                    </div>
-                    <h2 class="text-xl font-semibold mb-6 flex items-center relative z-10"><i
-                            class="fas fa-microphone mr-2 text-blue-500"></i> Speak Freely</h2>
+            <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+                <button @click="setActiveTab('dashboard')"
+                    :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'dashboard' ? 'active shadow-sm' : '']">
+                    <i class="fas fa-home w-6 text-center text-slate-400"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button @click="setActiveTab('tasks')"
+                    :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'tasks' ? 'active shadow-sm' : '']">
+                    <i class="fas fa-tasks w-6 text-center text-slate-400"></i>
+                    <span>Tasks</span>
+                    <span v-if="tasks.length > 0"
+                        class="ml-auto bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs font-bold">{{
+                        tasks.length }}</span>
+                </button>
+                <button @click="setActiveTab('context')"
+                    :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'context' ? 'active shadow-sm' : '']">
+                    <i class="fas fa-project-diagram w-6 text-center text-slate-400"></i>
+                    <span>Context Graph</span>
+                </button>
+                <button @click="setActiveTab('logs')"
+                    :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'logs' ? 'active shadow-sm' : '']">
+                    <i class="fas fa-terminal w-6 text-center text-slate-400"></i>
+                    <span>System Logs</span>
+                </button>
+            </nav>
 
-                    <div class="flex flex-col items-center justify-center space-y-6 relative z-10">
-                        <button @click="toggleRecording"
-                            class="w-24 h-24 rounded-full flex items-center justify-center text-3xl transition-all duration-300 shadow-md ring-4 ring-offset-2 ring-transparent hover:ring-blue-100"
-                            :class="isRecording ? 'bg-red-500 text-white recording-pulse hover:bg-red-600' : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 hover:shadow-lg'">
-                            <i class="fas" :class="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
-                        </button>
-                        <p class="text-center text-slate-500 font-medium text-sm h-12">{{ recordingText }}</p>
-                    </div>
-
-                    <div v-if="transcript"
-                        class="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200 text-sm text-slate-700 italic relative z-10 shadow-inner">
-                        "{{ transcript }}"
-                    </div>
-                </div>
-
-                <!-- Context Graph Snippet -->
-                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i
-                            class="fas fa-project-diagram mr-2 text-emerald-500"></i> Context Graph</h2>
-                    <ul class="space-y-3">
-                        <li v-for="(fact, index) in contextFacts" :key="index" class="flex items-start">
-                            <i class="fas fa-check-circle text-emerald-500 mt-1 mr-3 text-sm"></i>
-                            <div>
-                                <span class="block text-sm font-semibold text-slate-700">{{ fact.entity }}</span>
-                                <span class="block text-xs font-medium text-slate-500">{{ fact.value }}</span>
+            <div class="p-4 border-t border-slate-200/50">
+                <div class="glass-panel p-4 rounded-xl flex items-center justify-between shadow-sm">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <span
+                                class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ring-2 ring-white/50"
+                                :class="agentStatus === 'idle' ? 'bg-slate-400' : (agentStatus === 'listening' ? 'bg-red-500 recording-pulse' : 'bg-green-500')"></span>
+                            <div
+                                class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 shadow-inner">
+                                <i class="fas fa-user"></i>
                             </div>
-                        </li>
-                        <li v-if="contextFacts.length === 0"
-                            class="text-sm font-medium text-slate-400 text-center py-4 bg-slate-50 rounded-lg border border-slate-100 border-dashed">
-                            Waiting for input to build context...
-                        </li>
-                    </ul>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800 leading-none">Agent Status</p>
+                            <p class="text-xs text-slate-500 font-medium mt-1">{{ agentStatusText }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </aside>
 
-            <!-- Right Column: Timeline & Tasks -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Inferred Tasks Card -->
-                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i
-                            class="fas fa-tasks mr-2 text-blue-500"></i> Autonomously Inferred Tasks</h2>
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 md:p-8 lg:p-10 overflow-y-auto relative z-10 w-full">
+
+            <!-- Dashboard Tab -->
+            <transition name="fade">
+                <div v-if="activeTab === 'dashboard'" class="max-w-6xl mx-auto space-y-8">
+                    <header class="mb-8">
+                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Overview</h2>
+                        <p class="text-slate-500 mt-2">Manage your autonomous tasks and agent context.</p>
+                    </header>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                        <!-- Mic Column -->
+                        <div class="lg:col-span-1 space-y-6 lg:space-y-8">
+                            <!-- Voice Input Card -->
+                            <div class="glass-panel rounded-3xl p-8 shadow-glass relative overflow-hidden group">
+                                <div
+                                    class="absolute -right-10 -top-10 w-40 h-40 bg-blue-400/10 rounded-full blur-3xl group-hover:bg-blue-400/20 transition-all duration-500">
+                                </div>
+                                <div
+                                    class="absolute -left-10 -bottom-10 w-40 h-40 bg-emerald-400/10 rounded-full blur-3xl group-hover:bg-emerald-400/20 transition-all duration-500">
+                                </div>
+
+                                <h3 class="text-lg font-bold mb-8 flex items-center text-slate-700 relative z-10">
+                                    <i class="fas fa-microphone mr-3 text-blue-500 bg-blue-100 p-2 rounded-lg"></i>
+                                    Speak Freely
+                                </h3>
+
+                                <div class="flex flex-col items-center justify-center space-y-8 relative z-10 my-4">
+                                    <div class="relative">
+                                        <div v-show="isRecording"
+                                            class="absolute inset-0 bg-red-400 rounded-full opacity-20 recording-pulse scale-150">
+                                        </div>
+                                        <button @click="toggleRecording"
+                                            class="w-28 h-28 rounded-full flex items-center justify-center text-4xl transition-all duration-300 shadow-xl z-20 relative ring-4 ring-offset-4 ring-white"
+                                            :class="isRecording ? 'bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700' : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:-translate-y-1 hover:shadow-2xl'">
+                                            <i class="fas" :class="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-center text-slate-500 font-semibold text-sm h-6">{{ recordingText }}
+                                    </p>
+                                </div>
+
+                                <div v-if="transcript"
+                                    class="mt-8 p-5 bg-white/60 backdrop-blur-md rounded-2xl border border-white/80 text-sm text-slate-700 italic relative z-10 shadow-sm leading-relaxed">
+                                    "{{ transcript }}"
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats/Info Column -->
+                        <div class="lg:col-span-2 space-y-6 lg:space-y-8">
+                            <!-- Inferred Tasks Card (Mini) -->
+                            <div class="glass-panel rounded-3xl p-8 shadow-glass">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h3 class="text-lg font-bold flex items-center text-slate-700">
+                                        <i class="fas fa-tasks mr-3 text-emerald-500 bg-emerald-100 p-2 rounded-lg"></i>
+                                        Recent Tasks
+                                    </h3>
+                                    <button @click="setActiveTab('tasks')"
+                                        class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center group">
+                                        View All <i
+                                            class="fas fa-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform"></i>
+                                    </button>
+                                </div>
+
+                                <div v-if="tasks.length === 0"
+                                    class="text-center py-10 text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-300">
+                                    <div
+                                        class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-3">
+                                        <i class="fas fa-check-circle text-slate-300 text-xl"></i>
+                                    </div>
+                                    <p class="font-medium text-slate-500">No active tasks</p>
+                                </div>
+
+                                <div v-else class="space-y-4">
+                                    <div v-for="task in tasks.slice(0, 2)" :key="task.id"
+                                        class="p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-white shadow-sm flex items-start group hover:shadow-md transition-all duration-300">
+                                        <div class="mr-4 mt-1">
+                                            <div
+                                                class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+                                                <i class="fas fa-bolt"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-start mb-1">
+                                                <h4
+                                                    class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                                                    {{ task.title }}</h4>
+                                                <span
+                                                    class="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase"
+                                                    :class="getStatusBadgeClass(task.status)">{{ task.status }}</span>
+                                            </div>
+                                            <p class="text-sm text-slate-500 leading-relaxed">{{ task.description }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Context Sneak Peek -->
+                            <div class="glass-panel rounded-3xl p-8 shadow-glass">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h3 class="text-lg font-bold flex items-center text-slate-700">
+                                        <i
+                                            class="fas fa-project-diagram mr-3 text-indigo-500 bg-indigo-100 p-2 rounded-lg"></i>
+                                        Live Context
+                                    </h3>
+                                    <button @click="setActiveTab('context')"
+                                        class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center group">
+                                        Full Graph <i
+                                            class="fas fa-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform"></i>
+                                    </button>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <div v-for="(fact, index) in contextFacts" :key="index"
+                                        class="inline-flex items-center px-4 py-2 bg-white/70 backdrop-blur-sm rounded-xl border border-white/60 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 cursor-default">
+                                        <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wide">{{
+                                            fact.entity }}</span>
+                                        <span class="text-sm font-semibold text-slate-700">{{ fact.value }}</span>
+                                    </div>
+                                    <div v-if="contextFacts.length === 0"
+                                        class="text-sm font-medium text-slate-400 italic py-2">
+                                        Ready to extract facts from conversation...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <!-- Tasks Tab -->
+            <transition name="fade">
+                <div v-scroll v-if="activeTab === 'tasks'" class="max-w-4xl mx-auto space-y-6">
+                    <header class="mb-8 flex items-end justify-between border-b border-slate-200/50 pb-6">
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Inferred Tasks</h2>
+                            <p class="text-slate-500 mt-2">Actions autonomously generated based on your context.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-3xl font-black text-blue-600">{{ tasks.length }}</span>
+                            <span class="text-sm font-medium text-slate-500 block uppercase tracking-wider">Total</span>
+                        </div>
+                    </header>
 
                     <div v-if="tasks.length === 0"
-                        class="text-center py-12 text-slate-400 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
-                        <i class="fas fa-robot text-4xl mb-3 text-slate-300"></i>
-                        <p class="font-medium">No tasks inferred yet.</p>
-                        <p class="text-sm mt-1">Speak to the agent to build your profile.</p>
+                        class="text-center py-20 text-slate-400 glass-panel rounded-3xl border border-dashed border-slate-300">
+                        <div
+                            class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 mb-6 shadow-inner">
+                            <i class="fas fa-clipboard-list text-4xl text-slate-300"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-600 mb-2">No tasks available</h3>
+                        <p class="font-medium max-w-sm mx-auto">Tasks will appear here automatically when the agent
+                            determines actions are needed based on your input.</p>
                     </div>
 
                     <div v-else class="space-y-4">
-                        <div v-for="task in tasks" :key="task.id"
-                            class="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-start justify-between group hover:border-blue-400 hover:shadow-md transition-all">
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-3 mb-1">
-                                    <span class="px-2 py-0.5 rounded-md text-xs font-bold tracking-wide"
-                                        :class="getStatusBadgeClass(task.status)">{{ task.status.toUpperCase() }}</span>
-                                    <h3 class="font-semibold text-slate-800">{{ task.title }}</h3>
+                        <div v-for="(task, index) in tasks" :key="task.id"
+                            class="p-6 glass-panel rounded-2xl shadow-glass flex flex-col sm:flex-row items-start justify-between group hover:border-blue-300 hover:shadow-lg transition-all duration-300 relative overflow-hidden"
+                            :style="{ animationDelay: `${index * 50}ms` }">
+
+                            <!-- decorative line -->
+                            <div class="absolute left-0 top-0 bottom-0 w-1.5"
+                                :class="task.status === 'completed' ? 'bg-emerald-400' : (task.status === 'in_progress' ? 'bg-blue-400' : 'bg-amber-400')">
+                            </div>
+
+                            <div class="flex-1 pl-4">
+                                <div class="flex flex-wrap items-center gap-3 mb-2">
+                                    <h3
+                                        class="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                                        {{ task.title }}</h3>
+                                    <span
+                                        class="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shadow-sm"
+                                        :class="getStatusBadgeClass(task.status)">{{ task.status }}</span>
                                 </div>
-                                <p class="text-sm text-slate-600 mt-2">{{ task.description }}</p>
-                                <div v-if="task.action" class="mt-4">
-                                    <button
-                                        class="text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-transparent px-4 py-2 rounded-lg transition-colors shadow-sm">
-                                        {{ task.action }}
-                                    </button>
+                                <p class="text-slate-600 text-sm leading-relaxed max-w-2xl mb-4">{{ task.description }}
+                                </p>
+                            </div>
+
+                            <div v-if="task.action" class="mt-4 sm:mt-0 sm:ml-6 shrink-0 z-10">
+                                <button
+                                    class="text-sm font-bold bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 px-6 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md focus:ring-4 focus:ring-blue-100">
+                                    {{ task.action }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <!-- Context Graph Tab -->
+            <transition name="fade">
+                <div v-if="activeTab === 'context'" class="max-w-4xl mx-auto space-y-6">
+                    <header class="mb-8 border-b border-slate-200/50 pb-6">
+                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Context Graph</h2>
+                        <p class="text-slate-500 mt-2">The agent's understanding of your situation.</p>
+                    </header>
+
+                    <div class="glass-panel rounded-3xl p-8 lg:p-10 shadow-glass">
+                        <div v-if="contextFacts.length === 0"
+                            class="text-center py-16 text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-300">
+                            <i class="fas fa-network-wired text-5xl mb-4 text-slate-300"></i>
+                            <p class="font-medium text-lg text-slate-600 mb-1">Knowledge Graph Empty</p>
+                            <p class="text-sm max-w-sm mx-auto">Talk to the agent to build your persistent profile and
+                                context relationships.</p>
+                        </div>
+
+                        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div v-for="(fact, index) in contextFacts" :key="index"
+                                class="bg-white/80 backdrop-blur-sm p-5 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow flex items-start">
+                                <div
+                                    class="bg-indigo-50 w-10 h-10 rounded-xl flex items-center justify-center text-indigo-500 mr-4 shrink-0 mt-0.5">
+                                    <i class="fas fa-cube"></i>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{{
+                                        fact.entity }}</span>
+                                    <span class="block text-base font-semibold text-slate-800">{{ fact.value }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </transition>
 
-                <!-- Agent Action Logs Card -->
-                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i
-                            class="fas fa-terminal mr-2 text-emerald-500"></i> Agent Activity Log</h2>
+            <!-- Logs Tab -->
+            <transition name="fade">
+                <div v-if="activeTab === 'logs'" class="max-w-5xl mx-auto space-y-6 h-full flex flex-col">
+                    <header class="mb-4 shrink-0">
+                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">System Logs</h2>
+                        <p class="text-slate-500 mt-2">Real-time activity and reasoning trace.</p>
+                    </header>
+
                     <div
-                        class="bg-slate-50 rounded-xl border border-slate-200 p-4 h-64 overflow-y-auto font-mono text-xs shadow-inner">
-                        <div v-for="(log, idx) in activityLogs" :key="idx"
-                            class="mb-2 pb-2 border-b border-slate-200 last:border-0">
-                            <span class="text-slate-400">[{{ log.time }}]</span>
-                            <span :class="getLogColor(log.type)" class="ml-2 font-medium">{{ log.message }}</span>
+                        class="glass-panel rounded-3xl p-6 shadow-glass flex-1 min-h-[500px] flex flex-col relative overflow-hidden bg-slate-900 border-slate-800/50">
+                        <!-- Mac-like header -->
+                        <div class="flex items-center space-x-2 mb-6 shrink-0 relative z-10">
+                            <div class="w-3 h-3 rounded-full bg-red-500 shadow-sm"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-500 shadow-sm"></div>
+                            <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></div>
+                            <div class="ml-4 text-xs font-mono text-slate-400">agent-tty</div>
                         </div>
-                        <div v-if="activityLogs.length === 0" class="text-slate-400 font-medium text-center mt-8">System
-                            standby...</div>
+
+                        <div
+                            class="flex-1 overflow-y-auto font-mono text-xs sm:text-sm space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                            <div v-for="(log, idx) in activityLogs" :key="idx"
+                                class="flex hover:bg-slate-800/50 p-1.5 rounded transition-colors group">
+                                <span class="text-slate-500 shrink-0 w-24">[{{ log.time }}]</span>
+                                <span class="text-blue-400 shrink-0 mr-3">~ ❯</span>
+                                <span
+                                    :class="getLogColor(log.type) === 'text-slate-600' ? 'text-slate-300' : (getLogColor(log.type) === 'text-blue-600' ? 'text-blue-300' : (getLogColor(log.type) === 'text-emerald-600' ? 'text-emerald-400' : (getLogColor(log.type) === 'text-amber-600' ? 'text-amber-400' : 'text-red-400')))"
+                                    class="flex-1 tracking-wide">{{ log.message }}</span>
+                            </div>
+                            <div v-if="activityLogs.length === 0" class="text-slate-500 italic p-2 animate-pulse">
+                                Waiting for activity...</div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </transition>
+
         </main>
     </div>
 
+    <!-- Fix scrolling animation issue due to v-if transitions -->
+    <script>
+        // Adding a small directive to scroll to top when tabs change if needed
+        const appVue = Vue.createApp({/* implementation in app.js */ });
+        appVue.directive('scroll', {
+            mounted(el) { el.scrollIntoView({ behavior: 'smooth' }) }
+        });
+    </script>
     <script src="app.js"></script>
 </body>
 
