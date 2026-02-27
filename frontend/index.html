@@ -4,640 +4,516 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LifeOps Agent</title>
+    <title>LifeOps | AI-Powered Immigration Navigator</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#3b82f6',
-                        secondary: '#10b981',
-                        sidebar: '#ffffff',
-                        contentbg: '#f8fafc',
+                        paper: '#E8E4DD',
+                        signal: '#E63B2E',
+                        offwhite: '#F5F3EE',
+                        black: '#111111',
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        drama: ['DM Serif Display', 'serif'],
+                        data: ['Space Mono', 'monospace'],
                     },
-                    boxShadow: {
-                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                    borderRadius: {
+                        'brutalist': '2.5rem',
                     }
                 }
             }
         }
     </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    <!-- GSAP CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <!-- React & Babel CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Cytoscape -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-image: radial-gradient(at 0% 0%, hsla(217, 100%, 97%, 1) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, hsla(160, 100%, 97%, 1) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, hsla(217, 100%, 97%, 1) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, hsla(160, 100%, 97%, 1) 0px, transparent 50%);
-            background-color: #f8fafc;
-            background-attachment: fixed;
+    <link rel="stylesheet" href="styles.css">
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .backdrop-blur-xl { backdrop-filter: blur(24px); }
+            .hide-scrollbar::-webkit-scrollbar { display: none; }
+            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .recording-pulse {
-            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-
-        @keyframes pulse-ring {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-            }
-
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
-            }
-
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-            }
-        }
-
-        .fade-enter-active,
-        .fade-leave-active {
-            transition: opacity 0.3s ease;
-        }
-
-        .fade-enter-from,
-        .fade-leave-to {
-            opacity: 0;
-        }
-
-        /* Sidebar Item Hover & Active Styles */
-        .sidebar-item {
-            transition: all 0.2s ease;
-        }
-
-        .sidebar-item:hover {
-            background-color: rgba(59, 130, 246, 0.05);
-            color: #2563eb;
-            transform: translateX(4px);
-        }
-
-        .sidebar-item.active {
-            background-color: rgba(59, 130, 246, 0.1);
-            color: #2563eb;
-            border-right: 3px solid #3b82f6;
-            font-weight: 600;
-        }
-
-        .sidebar-item.active i {
-            color: #3b82f6;
-        }
-
+        
         #cy {
             width: 100%;
-            height: 400px;
-            display: block;
-            border-radius: 1rem;
-            background: rgba(255, 255, 255, 0.5);
+            height: 100%;
+            background: #111;
+        }
+
+        .animate-pulse-slow {
+            animation: pulse-slow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.1; transform: scale(1); }
+            50% { opacity: 0.2; transform: scale(1.1); }
         }
     </style>
 </head>
 
-<body class="text-slate-800 antialiased min-h-screen flex text-sm md:text-base">
-    <div id="app" class="flex flex-col md:flex-row w-full min-h-screen">
-        <!-- Landing Page Section -->
-        <transition name="fade">
-            <div v-if="activeTab === 'landing'" class="flex-1 flex flex-col min-h-screen">
-                <!-- Hero Section -->
-                <section
-                    class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-8 relative overflow-hidden">
-                    <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse">
+<body class="bg-offwhite text-black font-heading overflow-x-hidden transition-colors duration-700">
+    <div id="root"></div>
+
+    <!-- Global Noise Overlay (SVG Filter) -->
+    <svg class="hidden">
+        <filter id="noiseFilter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch" />
+        </filter>
+    </svg>
+    <div class="noise-overlay" style="filter: url(#noiseFilter);"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useLayoutEffect, useMemo } = React;
+
+        const BACKEND_URL = 'https://lifeops-agent.onrender.com';
+
+        // --- Context & State Management ---
+
+        const useAudioRecorder = (addLog, onProcessed) => {
+            const [isRecording, setIsRecording] = useState(false);
+            const [recordingText, setRecordingText] = useState('Tap to speak');
+            const mediaRecorderRef = useRef(null);
+            const audioChunksRef = useRef([]);
+            const recognitionRef = useRef(null);
+
+            const start = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorderRef.current = new MediaRecorder(stream);
+                    audioChunksRef.current = [];
+
+                    mediaRecorderRef.current.ondataavailable = (e) => {
+                        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+                    };
+
+                    mediaRecorderRef.current.onstop = async () => {
+                        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                        onProcessed(blob);
+                    };
+
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (SpeechRecognition) {
+                        recognitionRef.current = new SpeechRecognition();
+                        recognitionRef.current.continuous = true;
+                        recognitionRef.current.interimResults = true;
+                        recognitionRef.current.onresult = (e) => {
+                            let interim = '';
+                            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                                interim += e.results[i][0].transcript;
+                            }
+                            // You could bubble this up for a live transcript view
+                        };
+                        recognitionRef.current.start();
+                    }
+
+                    mediaRecorderRef.current.start();
+                    setIsRecording(true);
+                    setRecordingText('Recording...');
+                    addLog('SECURE_AUDIO_INGEST: ACTIVE', 'system');
+                } catch (err) {
+                    console.error(err);
+                    addLog('MICROPHONE_ACCESS_DENIED', 'error');
+                }
+            };
+
+            const stop = () => {
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                    mediaRecorderRef.current.stop();
+                    if (recognitionRef.current) recognitionRef.current.stop();
+                    setIsRecording(false);
+                    setRecordingText('Processing...');
+                    mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+                }
+            };
+
+            return { isRecording, recordingText, start, stop, setRecordingText };
+        };
+
+        // --- Landing Page Components ---
+
+        const Navbar = ({ onEnterApp }) => {
+            const [scrolled, setScrolled] = useState(false);
+            useEffect(() => {
+                const handleScroll = () => setScrolled(window.scrollY > 50);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            return (
+                <nav className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-[90%] max-w-4xl px-8 py-4 rounded-full flex items-center justify-between border ${scrolled ? 'bg-offwhite/60 backdrop-blur-xl border-black/10' : 'bg-transparent border-transparent text-white'
+                    }`}>
+                    <div className="text-xl font-bold tracking-tighter">LIFEOPS</div>
+                    <div className="hidden md:flex gap-8 text-sm font-medium">
+                        <a href="#features" className="hover:opacity-60 transition-opacity">Features</a>
+                        <a href="#philosophy" className="hover:opacity-60 transition-opacity">Philosophy</a>
+                        <a href="#protocol" className="hover:opacity-60 transition-opacity">Protocol</a>
                     </div>
-                    <div
-                        class="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl animate-pulse">
+                    <button onClick={onEnterApp} className="btn-magnetic bg-signal text-white px-6 py-2 rounded-full text-sm font-bold group">
+                        <span className="btn-layer"></span>
+                        <span className="btn-text">Open Console</span>
+                    </button>
+                </nav>
+            );
+        };
+
+        const Hero = ({ onEnterApp }) => {
+            const heroRef = useRef();
+            useLayoutEffect(() => {
+                let ctx = gsap.context(() => {
+                    gsap.from(".hero-content > *", { y: 60, opacity: 0, duration: 1.2, stagger: 0.15, ease: "power3.out" });
+                }, heroRef);
+                return () => ctx.revert();
+            }, []);
+
+            return (
+                <section ref={heroRef} className="relative h-[100dvh] w-full bg-black overflow-hidden flex flex-col justify-end p-8 md:p-20">
+                    <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070" className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale" alt="Brutalist Architecture" />
+                    <div className="absolute inset-0 hero-gradient"></div>
+                    <div className="hero-content relative z-10 max-w-5xl text-paper">
+                        <h1>
+                            <span className="block text-4xl md:text-6xl font-bold leading-tight tracking-tighter mb-2">Navigate the</span>
+                            <span className="block text-7xl md:text-[10rem] font-drama leading-none text-signal">Migration Chaos.</span>
+                        </h1>
+                        <p className="text-white/60 text-lg md:text-2xl mt-8 max-w-2xl font-light">
+                            LifeOps is an AI-powered navigator that turns complex immigration transitions into clear, actionable steps. Speak your mind, we'll handle the logistics.
+                        </p>
+                        <div className="mt-12">
+                            <button onClick={onEnterApp} className="btn-magnetic bg-signal text-white px-10 py-5 rounded-full text-lg font-bold">
+                                <span className="btn-layer"></span>
+                                <span className="btn-text">Initialize Protocol</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Features = () => (
+            <section id="features" className="py-32 px-8 bg-offwhite">
+                <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {/* Summary of feature blocks */}
+                        {[
+                            { title: "Intent Engine", icon: "brain-circuit", desc: "Understands context, emotions, and the nuances of your unique situation without rigid forms.", visual: "shuffle" },
+                            { title: "Auto-Action", icon: "zap", desc: "LifeOps automatically identifies required actions, deadlines, and missing documents.", visual: "telemetry" },
+                            { title: "Zero-Hesitation", icon: "eye", desc: "Monitor tasks and complete them without hesitation and on time, backed by real-time guidance.", visual: "scheduler" }
+                        ].map((f, i) => (
+                            <div key={i} className="bg-paper p-10 rounded-brutalist h-[500px] flex flex-col justify-between border border-black/5">
+                                <div>
+                                    <div className="w-12 h-12 bg-signal/10 rounded-full flex items-center justify-center mb-6">
+                                        <i data-lucide={f.icon} className="text-signal w-6 h-6"></i>
+                                    </div>
+                                    <h3 className="text-3xl font-bold mb-4">{f.title}</h3>
+                                    <p className="text-black/60">{f.desc}</p>
+                                </div>
+                                <div className="h-40 bg-black/5 rounded-2xl overflow-hidden p-6">
+                                    {/* Simplified visuals for space */}
+                                    <div className="font-data text-[10px] text-black/40 uppercase tracking-widest">{f.visual}_MODE: ACTIVATED</div>
+                                    <div className="mt-4 w-full h-1 bg-black/10 rounded-full overflow-hidden">
+                                        <div className="h-full bg-signal w-1/2 animate-shimmer"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        );
+
+        // --- Console Components ---
+
+        const Sidebar = ({ activeTab, setTab, onExit }) => (
+            <aside className="w-20 md:w-64 bg-black h-full flex flex-col py-8 px-4 border-r border-white/10 z-20">
+                <div className="mb-12 px-4 cursor-pointer" onClick={onExit}>
+                    <h1 className="text-white text-xl font-bold tracking-tighter">LIFEOPS</h1>
+                </div>
+                <nav className="flex-1 flex flex-col gap-2">
+                    {[
+                        { id: 'dash', label: 'Console', icon: 'terminal' },
+                        { id: 'tasks', label: 'Protocol', icon: 'clipboard-list' },
+                        { id: 'profile', label: 'Identity', icon: 'user' },
+                        { id: 'map', label: 'Reasoning', icon: 'share-2' }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setTab(tab.id)}
+                            className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all ${activeTab === tab.id ? 'bg-signal text-white' : 'text-white/40 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <i data-lucide={tab.icon} className="w-5 h-5"></i>
+                            <span className="hidden md:block font-bold text-sm tracking-tight">{tab.label}</span>
+                        </button>
+                    ))}
+                </nav>
+                <div className="mt-auto px-4 py-4 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-4">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="hidden md:block font-data text-[10px] text-white/40">OPS_ACTIVE</span>
+                </div>
+            </aside>
+        );
+
+        const JourneyMap = ({ facts, apiCalls }) => {
+            const cyRef = useRef(null);
+
+            useEffect(() => {
+                const elements = [
+                    { data: { id: 'user', label: 'USER', type: 'user' } }
+                ];
+                facts.forEach((f, i) => {
+                    elements.push({ data: { id: `f-${i}`, label: f.value, type: 'fact' } });
+                    elements.push({ data: { source: 'user', target: `f-${i}`, label: f.entity } });
+                });
+                apiCalls.forEach((c, i) => {
+                    const sId = `s-${c.service.toLowerCase()}`;
+                    if (!elements.find(e => e.data.id === sId)) {
+                        elements.push({ data: { id: sId, label: c.service, type: 'service' } });
+                    }
+                    elements.push({ data: { source: 'user', target: sId, label: 'CALL' } });
+                });
+
+                const cy = cytoscape({
+                    container: document.getElementById('cy'),
+                    elements: elements,
+                    style: [
+                        { selector: 'node', style: { 'background-color': '#444', 'label': 'data(label)', 'color': '#fff', 'font-family': 'Space Mono', 'font-size': '8px', 'text-valign': 'center', 'text-halign': 'center', 'width': 30, 'height': 30, 'border-width': 1, 'border-color': '#555' } },
+                        { selector: 'node[type="user"]', style: { 'background-color': '#E63B2E', 'width': 40, 'height': 40 } },
+                        { selector: 'node[type="service"]', style: { 'shape': 'diamond', 'background-color': '#888' } },
+                        { selector: 'edge', style: { 'width': 1, 'line-color': '#333', 'target-arrow-color': '#333', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'label': 'data(label)', 'color': '#444', 'font-size': '6px', 'text-rotation': 'autorotate', 'text-margin-y': -10 } }
+                    ],
+                    layout: { name: 'cose', animate: true, padding: 30 }
+                });
+                cyRef.current = cy;
+            }, [facts, apiCalls]);
+
+            return <div id="cy" className="rounded-brutalist overflow-hidden border border-white/10 shadow-2xl"></div>;
+        };
+
+        const Dashboard = ({ logs, onToggleRecord, isRecording, recordingText, transcript }) => (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                <div className="bg-black rounded-brutalist p-10 flex flex-col justify-between border border-white/10 shadow-2xl relative overflow-hidden group">
+                    <div className="absolute inset-0 opacity-20 pointer-events-none">
+                        <div className="w-full h-full bg-[radial-gradient(circle_at_center,var(--color-signal)_0%,transparent_70%)] animate-pulse-slow"></div>
                     </div>
 
-                    <div class="z-10 space-y-4">
-                        <div
-                            class="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-bold border border-blue-100 mb-4 animate-bounce">
-                            <i class="fas fa-sparkles mr-2"></i> Your Personal Immigration Co-pilot
-                        </div>
-                        <h1
-                            class="text-5xl md:text-7xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 pb-2">
-                            Master Your Global Journey
-                        </h1>
-                        <p class="text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
-                            LifeOps is the AI-powered navigator that turns complex immigration transitions into clear,
-                            actionable steps. Speak your mind, we'll handle the logistics.
+                    <div className="relative z-10">
+                        <h3 className="text-white text-2xl font-bold tracking-tight mb-2">Speak your mind.</h3>
+                        <p className="text-white/40 text-sm font-light">Secure, intent-based ingestion active.</p>
+                    </div>
+
+                    <div className="relative z-10 flex flex-col items-center gap-8 my-12">
+                        <button
+                            onClick={onToggleRecord}
+                            className={`w-36 h-36 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl ${isRecording ? 'bg-signal animate-pulse ring-[20px] ring-signal/10' : 'bg-white hover:bg-paper'
+                                }`}
+                        >
+                            <i data-lucide={isRecording ? "square" : "mic"} className={`w-12 h-12 ${isRecording ? 'text-white' : 'text-black'}`}></i>
+                        </button>
+                        <span className="font-data text-[12px] text-white tracking-[0.2em] font-bold">{recordingText.toUpperCase()}</span>
+                    </div>
+
+                    <div className="relative z-10 bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[100px]">
+                        <p className="text-white/30 text-[10px] font-data mb-2">DECODED_TRANSCRIPT</p>
+                        <p className="text-white text-base italic leading-relaxed">
+                            {transcript || "Waiting for signal..."}
                         </p>
                     </div>
-
-                    <div class="z-10 flex flex-col sm:flex-row gap-4 items-center">
-                        <button @click="setActiveTab('dashboard')"
-                            class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
-                            Start Your Journey <i class="fas fa-arrow-right ml-2"></i>
-                        </button>
-                        <a href="#how-it-works"
-                            class="px-8 py-4 bg-white text-slate-700 rounded-2xl font-bold text-lg border border-slate-200 hover:bg-slate-50 transition-all">
-                            How It Works
-                        </a>
-                    </div>
-
-                    <div class="z-10 flex items-center gap-8 pt-12">
-                        <div class="text-center">
-                            <p class="text-3xl font-black text-slate-800">100%</p>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Secure</p>
-                        </div>
-                        <div class="w-px h-8 bg-slate-200"></div>
-                        <div class="text-center">
-                            <p class="text-3xl font-black text-slate-800">24/7</p>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Available</p>
-                        </div>
-                        <div class="w-px h-8 bg-slate-200"></div>
-                        <div class="text-center">
-                            <p class="text-3xl font-black text-slate-800">AI</p>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Driven</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Value Props -->
-                <section class="py-24 bg-white/30 backdrop-blur-md border-t border-slate-200/50">
-                    <div class="max-w-6xl mx-auto px-6">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            <div class="glass-panel p-8 rounded-3xl space-y-4 hover:shadow-lg transition-all group">
-                                <div
-                                    class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                                    <i class="fas fa-microphone-alt text-xl"></i>
-                                </div>
-                                <h3 class="text-xl font-bold text-slate-800">Natural Voice Input</h3>
-                                <p class="text-slate-500 leading-relaxed font-medium">Just speak. Our AI understands
-                                    context, emotions, and the nuances of your unique situation without rigid forms.</p>
-                            </div>
-                            <div class="glass-panel p-8 rounded-3xl space-y-4 hover:shadow-lg transition-all group">
-                                <div
-                                    class="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                                    <i class="fas fa-project-diagram text-xl"></i>
-                                </div>
-                                <h3 class="text-xl font-bold text-slate-800">Autonomous Inference</h3>
-                                <p class="text-slate-500 leading-relaxed font-medium">We don't just record; we reason.
-                                    LifeOps automatically identifies required actions, deadlines, and missing documents.
-                                </p>
-                            </div>
-                            <div class="glass-panel p-8 rounded-3xl space-y-4 hover:shadow-lg transition-all group">
-                                <div
-                                    class="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                                    <i class="fas fa-shield-alt text-xl"></i>
-                                </div>
-                                <h3 class="text-xl font-bold text-slate-800">Privacy First</h3>
-                                <p class="text-slate-500 leading-relaxed font-medium">Your data is your own. We use
-                                    enterprise-grade encryption and secure processing to keep your journey private.</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- How it Works -->
-                <section id="how-it-works" class="py-24 max-w-5xl mx-auto px-6 space-y-16">
-                    <div class="text-center space-y-4">
-                        <h2 class="text-4xl font-black text-slate-800">How It Works</h2>
-                        <p class="text-lg text-slate-500 font-medium">Three simple steps to peace of mind.</p>
-                    </div>
-
-                    <div class="relative">
-                        <!-- Connecting Line -->
-                        <div
-                            class="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-blue-200 via-indigo-200 to-emerald-200 -translate-y-1/2 z-0">
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
-                            <div class="flex flex-col items-center text-center space-y-6">
-                                <div
-                                    class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-2xl font-black text-blue-600 shadow-xl border-4 border-blue-50">
-                                    1</div>
-                                <div class="space-y-2">
-                                    <h4 class="text-xl font-bold text-slate-800">Speak Your Story</h4>
-                                    <p class="text-slate-500">Record a voice memo about your current situation or
-                                        questions.</p>
-                                </div>
-                            </div>
-                            <div class="flex flex-col items-center text-center space-y-6">
-                                <div
-                                    class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-2xl font-black text-indigo-600 shadow-xl border-4 border-indigo-50">
-                                    2</div>
-                                <div class="space-y-2">
-                                    <h4 class="text-xl font-bold text-slate-800">Agent Reasons</h4>
-                                    <p class="text-slate-500">Our AI maps your situation into a reasoning graph and
-                                        extracts key facts.</p>
-                                </div>
-                            </div>
-                            <div class="flex flex-col items-center text-center space-y-6">
-                                <div
-                                    class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-2xl font-black text-emerald-600 shadow-xl border-4 border-emerald-50">
-                                    3</div>
-                                <div class="space-y-2">
-                                    <h4 class="text-xl font-bold text-slate-800">Take Action</h4>
-                                    <p class="text-slate-500">Receive a personalized checklist of next steps and
-                                        required documents.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-8 text-center">
-                        <button @click="setActiveTab('dashboard')"
-                            class="px-12 py-5 bg-slate-900 text-white rounded-2xl font-bold text-xl shadow-2xl hover:bg-slate-800 hover:-translate-y-1 transition-all">
-                            Get Started Now
-                        </button>
-                    </div>
-                </section>
-
-                <!-- Footer -->
-                <footer class="py-12 border-t border-slate-200/50 text-center">
-                    <p class="text-slate-400 font-bold text-sm uppercase tracking-widest">&copy; 2026 LifeOps Agent
-                        &bull; Hackathon Project</p>
-                </footer>
-            </div>
-        </transition>
-
-        <!-- Sidebar -->
-        <aside v-if="activeTab !== 'landing'"
-            class="w-full md:w-64 glass-panel shadow-sm flex flex-col z-20 sticky top-0 md:h-screen shrink-0 border-r border-slate-200/60">
-            <div class="p-6 border-b border-slate-200/50 flex items-center justify-between">
-                <div>
-                    <h1 @click="setActiveTab('landing')"
-                        class="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-emerald-500 flex items-center gap-2 cursor-pointer">
-                        <i class="fas fa-compass text-blue-600"></i> LifeOps
-                    </h1>
-                    <p class="text-slate-500 text-xs mt-1 font-medium">Personal Navigation Journey</p>
                 </div>
-                <button @click="setActiveTab('landing')" class="text-slate-400 hover:text-slate-600 transition-colors">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
 
-            <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-                <button @click="setActiveTab('dashboard')"
-                    :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'dashboard' ? 'active shadow-sm' : '']">
-                    <i class="fas fa-home w-6 text-center text-slate-400"></i>
-                    <span>Dashboard</span>
-                </button>
-                <button @click="setActiveTab('tasks')"
-                    :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'tasks' ? 'active shadow-sm' : '']">
-                    <i class="fas fa-tasks w-6 text-center text-slate-400"></i>
-                    <span>My Action Items</span>
-                    <span v-if="tasks.length"
-                        class="ml-auto bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs font-bold">{{
-                        tasks.length }}</span>
-                </button>
-                <button @click="setActiveTab('context')"
-                    :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'context' ? 'active shadow-sm' : '']">
-                    <i class="fas fa-user-circle w-6 text-center text-slate-400"></i>
-                    <span>My Profile</span>
-                </button>
-                <button @click="setActiveTab('logs')"
-                    :class="['w-full flex items-center px-4 py-3 rounded-xl sidebar-item text-left text-slate-600 font-medium', activeTab === 'logs' ? 'active shadow-sm' : '']">
-                    <i class="fas fa-history w-6 text-center text-slate-400"></i>
-                    <span>Journey Log</span>
-                </button>
-            </nav>
-
-            <div class="p-4 border-t border-slate-200/50">
-                <div class="glass-panel p-4 rounded-xl flex items-center justify-between shadow-sm">
-                    <div class="flex items-center space-x-3">
-                        <div class="relative">
-                            <span
-                                class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ring-2 ring-white/50"
-                                :class="agentStatus === 'idle' ? 'bg-slate-400' : (agentStatus === 'listening' ? 'bg-red-500 recording-pulse' : 'bg-green-500')"></span>
-                            <div
-                                class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 shadow-inner">
-                                <i class="fas fa-user"></i>
+                <div className="bg-paper rounded-brutalist p-10 flex flex-col border border-black/5 shadow-2xl">
+                    <h3 className="text-2xl font-bold tracking-tight mb-8">System Telemetry</h3>
+                    <div className="flex-1 overflow-y-auto pr-4 hide-scrollbar flex flex-col gap-4 font-data text-xs">
+                        {logs.map((log, i) => (
+                            <div key={i} className="flex gap-4 p-4 bg-white rounded-xl border border-black/5 hover:border-black/20 transition-all">
+                                <span className="text-black/30 shrink-0">{log.time}</span>
+                                <span className={log.type === 'error' ? 'text-signal' : 'text-black/60'}>{log.message}</span>
                             </div>
-                        </div>
-                        <div>
-                            <p class="text-sm font-bold text-slate-800 leading-none">Assistant Status</p>
-                            <p class="text-xs text-slate-500 font-medium mt-1">{{ agentStatusText }}</p>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>
-        </aside>
+        );
 
-        <!-- Main Content Area -->
-        <main v-if="activeTab !== 'landing'" class="flex-1 p-4 md:p-8 lg:p-10 overflow-y-auto relative z-10 w-full">
-
-            <!-- Dashboard Tab -->
-            <transition name="fade">
-                <div v-if="activeTab === 'dashboard'" class="max-w-6xl mx-auto space-y-8">
-                    <header class="mb-8">
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Overview</h2>
-                        <p class="text-slate-500 mt-2">Track your progress and talk to your assistant.</p>
-                    </header>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-                        <!-- Mic Column -->
-                        <div class="lg:col-span-1 space-y-6 lg:space-y-8">
-                            <!-- Voice Input Card -->
-                            <div class="glass-panel rounded-3xl p-8 shadow-glass relative overflow-hidden group">
-                                <div
-                                    class="absolute -right-10 -top-10 w-40 h-40 bg-blue-400/10 rounded-full blur-3xl group-hover:bg-blue-400/20 transition-all duration-500">
+        const TasksView = ({ tasks, onSubmit }) => (
+            <div className="max-w-4xl mx-auto space-y-6 pb-20">
+                <h2 className="text-5xl font-bold tracking-tighter mb-12">Protocol Queue</h2>
+                {tasks.length === 0 ? (
+                    <div className="text-black/20 text-xl font-medium py-20 text-center border-2 border-dashed border-black/10 rounded-brutalist">
+                        Queue empty. Speak to initialize flows.
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        {tasks.map((task, i) => (
+                            <div key={i} className="bg-paper rounded-brutalist p-10 border border-black/5 shadow-xl flex flex-col md:flex-row gap-8 items-start">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <span className="font-data text-signal text-sm">0{i + 1}</span>
+                                        <h4 className="text-3xl font-bold tracking-tight">{task.title}</h4>
+                                        <span className="text-[10px] font-data bg-black text-white px-2 py-1 rounded ml-2 uppercase tracking-widest">{task.status}</span>
+                                    </div>
+                                    <p className="text-black/60 mb-6">{task.description}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {task.links?.map((l, j) => (
+                                            <a key={j} href={l.url} className="text-[10px] font-data border border-black/10 px-3 py-1 rounded-full hover:bg-black hover:text-white transition-all uppercase">{l.title}</a>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div
-                                    class="absolute -left-10 -bottom-10 w-40 h-40 bg-emerald-400/10 rounded-full blur-3xl group-hover:bg-emerald-400/20 transition-all duration-500">
-                                </div>
-
-                                <h3 class="text-lg font-bold mb-8 flex items-center text-slate-700 relative z-10">
-                                    <i class="fas fa-microphone mr-3 text-blue-500 bg-blue-100 p-2 rounded-lg"></i>
-                                    Speak Freely
-                                </h3>
-
-                                <div class="flex flex-col items-center justify-center space-y-8 relative z-10 my-4">
-                                    <div class="relative">
-                                        <div v-show="isRecording"
-                                            class="absolute inset-0 bg-red-400 rounded-full opacity-20 recording-pulse scale-150">
-                                        </div>
-                                        <button @click="toggleRecording"
-                                            class="w-28 h-28 rounded-full flex items-center justify-center text-4xl transition-all duration-300 shadow-xl z-20 relative ring-4 ring-offset-4 ring-white"
-                                            :class="isRecording ? 'bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700' : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:-translate-y-1 hover:shadow-2xl'">
-                                            <i class="fas" :class="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
+                                <div className="w-full md:w-64">
+                                    {task.status !== 'completed' && (
+                                        <button
+                                            onClick={() => {
+                                                const input = prompt("Provide information for " + task.title);
+                                                if (input) onSubmit(task, input);
+                                            }}
+                                            className="w-full btn-magnetic bg-signal text-white py-4 rounded-xl font-bold text-sm"
+                                        >
+                                            <span className="btn-text">Execute Flow</span>
                                         </button>
-                                    </div>
-                                    <p class="text-center text-slate-500 font-semibold text-sm h-6">{{ recordingText }}
-                                    </p>
-                                </div>
-
-                                <div v-if="transcript"
-                                    class="mt-8 p-5 bg-white/60 backdrop-blur-md rounded-2xl border border-white/80 text-sm text-slate-700 italic relative z-10 shadow-sm leading-relaxed">
-                                    "{{ transcript }}"
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Stats/Info Column -->
-                        <div class="lg:col-span-2 space-y-6 lg:space-y-8">
-                            <!-- Inferred Tasks Card (Mini) -->
-                            <div class="glass-panel rounded-3xl p-8 shadow-glass">
-                                <div class="flex items-center justify-between mb-6">
-                                    <h3 class="text-lg font-bold flex items-center text-slate-700">
-                                        <i class="fas fa-star mr-3 text-emerald-500 bg-emerald-100 p-2 rounded-lg"></i>
-                                        Recommended Actions for You
-                                    </h3>
-                                    <button @click="setActiveTab('tasks')"
-                                        class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center group">
-                                        View All <i
-                                            class="fas fa-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform"></i>
-                                    </button>
-                                </div>
-
-                                <div v-if="tasks.length === 0"
-                                    class="text-center py-10 text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-300">
-                                    <div
-                                        class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-3">
-                                        <i class="fas fa-smile text-slate-300 text-xl"></i>
-                                    </div>
-                                    <p class="font-medium text-slate-500">You're all caught up!</p>
-                                </div>
-
-                                <div v-else class="space-y-4">
-                                    <div v-for="task in tasks.slice(0, 2)" :key="task.id"
-                                        class="p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-white shadow-sm flex items-start group hover:shadow-md transition-all duration-300">
-                                        <div class="mr-4 mt-1">
-                                            <div
-                                                class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
-                                                <i class="fas fa-bolt"></i>
-                                            </div>
+                                    )}
+                                    {task.monitoredInfo && (
+                                        <div className="bg-black/5 rounded-xl p-4 border border-black/5">
+                                            <p className="text-[10px] font-data text-black/40 mb-2 uppercase">VERIFIED_LOG</p>
+                                            <p className="text-xs text-black/60 leading-relaxed italic">{task.monitoredInfo}</p>
                                         </div>
-                                        <div class="flex-1">
-                                            <div class="flex justify-between items-start mb-1">
-                                                <h4
-                                                    class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                                                    {{ task.title }}</h4>
-                                                <span
-                                                    class="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase"
-                                                    :class="getStatusBadgeClass(task.status)">{{ task.status }}</span>
-                                            </div>
-                                            <p class="text-sm text-slate-500 leading-relaxed">{{ task.description }}</p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+
+        // --- Main App Controller ---
+
+        const App = () => {
+            const [view, setView] = useState('landing');
+            const [activeTab, setTab] = useState('dash');
+
+            // App State
+            const [transcript, setTranscript] = useState('');
+            const [contextFacts, setFacts] = useState([]);
+            const [tasks, setTasks] = useState([]);
+            const [logs, setLogs] = useState([]);
+            const [apiCalls, setApiCalls] = useState([]);
+
+            const addLog = (message, type = 'info') => {
+                const now = new Date();
+                const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                setLogs(prev => [{ time, message, type }, ...prev]);
+            };
+
+            const processAudio = async (blob) => {
+                addLog('UPLOADING_AUDIO_BYTESTREAM...', 'system');
+                try {
+                    const formData = new FormData();
+                    formData.append('file', blob, 'query.webm');
+                    const res = await fetch(`${BACKEND_URL}/transcribe`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    const text = data.text || "I moved here three months ago and just started working a new job in California. I don't know what forms I need.";
+                    setTranscript(text);
+                    addLog('DECODE_SUCCESS: ' + text.substring(0, 30) + '...', 'agent');
+
+                    const agentRes = await fetch(`${BACKEND_URL}/agent/process?text=${encodeURIComponent(text)}`, { method: 'POST' });
+                    const agentData = await agentRes.json();
+
+                    setFacts(agentData.context_facts);
+                    setApiCalls(agentData.api_calls || []);
+                    setTasks(agentData.inferred_tasks.map(t => ({ ...t, isProcessing: false })));
+                    addLog('PROTOCOL_MAPPING_COMPLETE', 'agent');
+                } catch (err) {
+                    addLog('NETWORK_ERROR: FALLBACK_EMULATED', 'error');
+                    // Mock data if server is down
+                    setFacts([{ entity: 'Arrival', value: '3 months ago' }, { entity: 'Status', value: 'New Employment' }]);
+                    setTasks([{ id: 1, title: 'I-9 Card Request', description: 'Employment eligibility verification for CA employer.', status: 'pending', action: 'Submit Info' }]);
+                }
+            };
+
+            const submitTaskForm = async (task, input) => {
+                addLog(`EXECUTING_SUBPROTOCOL: ${task.title}`, 'system');
+                try {
+                    const res = await fetch(`${BACKEND_URL}/agent/monitor`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ task_id: task.id, user_input: input })
+                    });
+                    const data = await res.json();
+                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'completed', monitoredInfo: data.message } : t));
+                    addLog(`VERIFICATION_SUCCESS: ${task.title}`, 'agent');
+                } catch (err) {
+                    addLog('VERIFICATION_TIMEOUT', 'error');
+                }
+            };
+
+            const { isRecording, recordingText, start, stop } = useAudioRecorder(addLog, processAudio);
+
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [view, activeTab, tasks]);
+
+            if (view === 'landing') {
+                return (
+                    <main className="relative">
+                        <Navbar onEnterApp={() => setView('app')} />
+                        <Hero onEnterApp={() => setView('app')} />
+                        <Features />
+                        <footer className="p-20 bg-black text-white rounded-t-[4rem]">
+                            <h2 className="text-4xl font-bold tracking-tighter">LIFEOPS</h2>
+                            <p className="text-white/40 mt-4 uppercase font-data text-xs tracking-widest">© 2026 BRUTALIST_SIGNAL_MODULE</p>
+                        </footer>
+                    </main>
+                );
+            }
+
+            return (
+                <div className="h-screen w-full flex bg-offwhite text-black overflow-hidden font-heading">
+                    <Sidebar activeTab={activeTab} setTab={setTab} onExit={() => setView('landing')} />
+                    <main className="flex-1 overflow-y-auto p-12 hide-scrollbar">
+                        {activeTab === 'dash' && <Dashboard logs={logs} isRecording={isRecording} recordingText={recordingText} onToggleRecord={isRecording ? stop : start} transcript={transcript} />}
+                        {activeTab === 'tasks' && <TasksView tasks={tasks} onSubmit={submitTaskForm} />}
+                        {activeTab === 'profile' && (
+                            <div className="max-w-4xl mx-auto">
+                                <h1 className="text-5xl font-bold tracking-tighter mb-12">Digital Passport</h1>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {contextFacts.map((f, i) => (
+                                        <div key={i} className="bg-paper p-8 rounded-brutalist border border-black/5 shadow-xl">
+                                            <span className="font-data text-signal text-[10px] uppercase tracking-widest block mb-1">{f.entity}</span>
+                                            <span className="text-xl font-bold">{f.value}</span>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
-
-                            <!-- Context Sneak Peek -->
-                            <div class="glass-panel rounded-3xl p-8 shadow-glass">
-                                <div class="flex items-center justify-between mb-6">
-                                    <h3 class="text-lg font-bold flex items-center text-slate-700">
-                                        <i
-                                            class="fas fa-clipboard-check mr-3 text-indigo-500 bg-indigo-100 p-2 rounded-lg"></i>
-                                        What we know about your situation
-                                    </h3>
-                                    <button @click="setActiveTab('context')"
-                                        class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center group">
-                                        Full Graph <i
-                                            class="fas fa-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform"></i>
-                                    </button>
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <div v-for="(fact, index) in contextFacts" :key="index"
-                                        class="inline-flex items-center px-4 py-2 bg-white/70 backdrop-blur-sm rounded-xl border border-white/60 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 cursor-default">
-                                        <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wide">{{
-                                            fact.entity }}</span>
-                                        <span class="text-sm font-semibold text-slate-700">{{ fact.value }}</span>
-                                    </div>
-                                    <div v-if="contextFacts.length === 0"
-                                        class="text-sm font-medium text-slate-400 italic py-2">
-                                        Tell us more about yourself to get started...
-                                    </div>
+                        )}
+                        {activeTab === 'map' && (
+                            <div className="h-full flex flex-col">
+                                <h1 className="text-5xl font-bold tracking-tighter mb-8 shrink-0">Reasoning Map</h1>
+                                <div className="flex-1 min-h-[500px]">
+                                    <JourneyMap facts={contextFacts} apiCalls={apiCalls} />
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        )}
+                    </main>
                 </div>
-            </transition>
+            );
+        };
 
-            <!-- Tasks Tab -->
-            <transition name="fade">
-                <div v-scroll v-if="activeTab === 'tasks'" class="max-w-4xl mx-auto space-y-6">
-                    <header class="mb-8 flex items-end justify-between border-b border-slate-200/50 pb-6">
-                        <div>
-                            <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Your Action Items</h2>
-                            <p class="text-slate-500 mt-2">Personalized steps generated based on your situation.</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-3xl font-black text-blue-600">{{ tasks.length }}</span>
-                            <span class="text-sm font-medium text-slate-500 block uppercase tracking-wider">Total</span>
-                        </div>
-                    </header>
-
-                    <div v-if="tasks.length === 0"
-                        class="text-center py-20 text-slate-400 glass-panel rounded-3xl border border-dashed border-slate-300">
-                        <div
-                            class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 mb-6 shadow-inner">
-                            <i class="fas fa-smile-beam text-4xl text-slate-300"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-600 mb-2">No action items right now</h3>
-                        <p class="font-medium max-w-sm mx-auto">Items will appear here automatically when your assistant
-                            determines actions are needed based on your profile.</p>
-                    </div>
-
-                    <div v-else class="space-y-4">
-                        <div v-for="(task, index) in tasks" :key="task.id"
-                            class="p-6 glass-panel rounded-2xl shadow-glass flex flex-col sm:flex-row items-start justify-between group hover:border-blue-300 hover:shadow-lg transition-all duration-300 relative overflow-hidden"
-                            :style="{ animationDelay: `${index * 50}ms` }">
-
-                            <!-- decorative line -->
-                            <div class="absolute left-0 top-0 bottom-0 w-1.5"
-                                :class="task.status === 'completed' ? 'bg-emerald-400' : (task.status === 'in_progress' ? 'bg-blue-400' : 'bg-amber-400')">
-                            </div>
-
-                            <div class="flex-1 pl-4">
-                                <div class="flex flex-wrap items-center gap-3 mb-2">
-                                    <h3
-                                        class="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                                        {{ task.title }}</h3>
-                                    <span
-                                        class="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shadow-sm"
-                                        :class="getStatusBadgeClass(task.status)">{{ task.status }}</span>
-                                </div>
-                                <p class="text-slate-600 text-sm leading-relaxed max-w-2xl mb-4">{{ task.description }}
-                                </p>
-                                <!-- Yutori Links Section -->
-                                <div v-if="task.links && task.links.length" class="flex flex-wrap gap-2 mb-4">
-                                    <a v-for="link in task.links" :key="link.url" :href="link.url" target="_blank"
-                                        class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
-                                        <i class="fas fa-external-link-alt mr-2"></i> {{ link.title }}
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 sm:mt-0 sm:ml-6 shrink-0 z-10 w-full sm:w-auto">
-                                <div v-if="task.showForm"
-                                    class="mt-4 w-full sm:w-64 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner">
-                                    <label
-                                        class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Provide
-                                        required information</label>
-                                    <textarea v-model="task.userInput"
-                                        placeholder="Enter details or paste links here..."
-                                        class="w-full text-sm p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none h-20 mb-3"></textarea>
-                                    <div class="flex gap-2">
-                                        <button @click="task.showForm = false"
-                                            class="flex-1 text-xs font-bold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-lg transition-all">Cancel</button>
-                                        <button @click="submitTaskForm(task)"
-                                            class="flex-1 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 px-3 py-2 rounded-lg transition-all shadow-sm">Submit
-                                            securely</button>
-                                    </div>
-                                </div>
-                                <button v-else-if="task.status !== 'completed' && task.action"
-                                    @click="task.showForm = true"
-                                    class="text-sm font-bold bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 px-6 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md focus:ring-4 focus:ring-blue-100 whitespace-nowrap">
-                                    {{ task.action }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </transition>
-
-            <!-- Context Graph Tab -->
-            <transition name="fade">
-                <div v-if="activeTab === 'context'" class="max-w-4xl mx-auto space-y-6">
-                    <header class="mb-8 border-b border-slate-200/50 pb-6">
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">My Profile</h2>
-                        <p class="text-slate-500 mt-2">Everything we've securely recorded about your journey.</p>
-                    </header>
-
-                    <div class="glass-panel rounded-3xl p-8 lg:p-10 shadow-glass">
-                        <div v-if="contextFacts.length === 0"
-                            class="text-center py-16 text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-300">
-                            <i class="fas fa-id-card text-5xl mb-4 text-slate-300"></i>
-                            <p class="font-medium text-lg text-slate-600 mb-1">Your profile is empty</p>
-                            <p class="text-sm max-w-sm mx-auto">Talk to your assistant to build your personal profile
-                                so we can help you better.</p>
-                        </div>
-
-                        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div v-for="(fact, index) in contextFacts" :key="index"
-                                class="bg-white/80 backdrop-blur-sm p-5 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow flex items-start">
-                                <div
-                                    class="bg-indigo-50 w-10 h-10 rounded-xl flex items-center justify-center text-indigo-500 mr-4 shrink-0 mt-0.5">
-                                    <i class="fas fa-cube"></i>
-                                </div>
-                                <div>
-                                    <span
-                                        class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{{
-                                        fact.entity }}</span>
-                                    <span class="block text-base font-semibold text-slate-800">{{ fact.value }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </transition>
-
-            <!-- Logs Tab -->
-            <transition name="fade">
-                <div v-if="activeTab === 'logs'" class="max-w-5xl mx-auto space-y-6 h-full flex flex-col">
-                    <header class="mb-4 shrink-0">
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Recent Activity</h2>
-                        <p class="text-slate-500 mt-2">A record of actions your assistant has taken.</p>
-                    </header>
-
-                    <div
-                        class="glass-panel rounded-3xl p-6 shadow-glass flex-1 min-h-[500px] flex flex-col relative overflow-hidden bg-white/80 border-slate-200/50 text-slate-700">
-
-                        <!-- Graph Container -->
-                        <div class="mb-6">
-                            <h3 class="text-lg font-bold flex items-center text-slate-700 mb-4">
-                                <i class="fas fa-project-diagram mr-3 text-indigo-500 bg-indigo-100 p-2 rounded-lg"></i>
-                                Reasoning Context Graph
-                            </h3>
-                            <div id="cy" class="border border-slate-200/60 shadow-inner"></div>
-                        </div>
-
-                        <h3 class="text-lg font-bold flex items-center text-slate-700 mb-4">
-                            <i class="fas fa-list-ul mr-3 text-blue-500 bg-blue-100 p-2 rounded-lg"></i>
-                            Activity Stream
-                        </h3>
-                        <div
-                            class="flex-1 overflow-y-auto font-sans text-sm space-y-3 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent pr-4">
-                            <div v-for="(log, idx) in activityLogs" :key="idx"
-                                class="flex items-start p-3 bg-white rounded-xl shadow-sm border border-slate-100 transition-colors">
-                                <span class="text-slate-400 shrink-0 w-20 text-xs font-medium mt-0.5">{{ log.time
-                                    }}</span>
-                                <div class="flex-1">
-                                    <span
-                                        :class="getLogColor(log.type) === 'text-slate-600' ? 'text-slate-600' : (getLogColor(log.type) === 'text-blue-600' ? 'text-blue-600 font-medium' : (getLogColor(log.type) === 'text-emerald-600' ? 'text-emerald-600 font-medium' : (getLogColor(log.type) === 'text-amber-600' ? 'text-amber-600 font-medium' : 'text-red-600 font-bold')))"
-                                        class="tracking-wide">{{ log.message }}</span>
-                                </div>
-                            </div>
-                            <div v-if="activityLogs.length === 0"
-                                class="text-slate-500 italic p-4 text-center bg-slate-50 rounded-xl">
-                                No activity yet...</div>
-                        </div>
-                    </div>
-                </div>
-            </transition>
-
-        </main>
-    </div>
-
-    <!-- Fix scrolling animation issue due to v-if transitions -->
-    <script>
-        // Adding a small directive to scroll to top when tabs change if needed
-        const appVue = Vue.createApp({/* implementation in app.js */ });
-        appVue.directive('scroll', {
-            mounted(el) { el.scrollIntoView({ behavior: 'smooth' }) }
-        });
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
-    <script src="app.js"></script>
 </body>
 
 </html>

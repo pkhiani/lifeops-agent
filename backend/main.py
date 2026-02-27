@@ -38,6 +38,10 @@ class ContextFact(BaseModel):
     entity: str
     value: str
 
+class MockMonitorRequest(BaseModel):
+    task_id: int
+    user_input: str
+
 @app.get("/")
 def read_root():
     return {"status": "LifeOps Agent Backend Running"}
@@ -101,8 +105,9 @@ import requests
 async def transcribe_audio(file: UploadFile = File(...)):
     """Handle audio file and return transcription using Modulate API via requests."""
     api_key = os.getenv("MODULATE_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="MODULATE_API_KEY not set")
+    if not api_key or api_key == "REPLACE_WITH_YOUR_KEY":
+        print("DEBUG: MODULATE_API_KEY is missing or placeholder")
+        raise HTTPException(status_code=500, detail="MODULATE_API_KEY not correctly set")
 
     url = "https://modulate-developer-apis.com/api/velma-2-stt-batch"
     headers = {"X-API-Key": api_key}
@@ -113,6 +118,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
     record_api_call("Modulate", url)
 
     # Use audio/webm as that is what the frontend provides
+    print(f"DEBUG: Received audio file. Size: {len(content)} bytes")
     files = {"upload_file": ("audio.webm", content, "audio/webm")}
     data = {
         "speaker_diarization": "true",
@@ -121,13 +127,15 @@ async def transcribe_audio(file: UploadFile = File(...)):
     
     try:
         response = requests.post(url, headers=headers, data=data, files=files)
+        print(f"DEBUG: Modulate API Status: {response.status_code}")
+        print(f"DEBUG: Modulate API Raw Response: {response.text}")
         response.raise_for_status()
         result = response.json()
         
         # Parse the JSON matching the typical Modulate response
         # Try different possible keys for the transcription text
         transcribed_text = result.get("text")
-        if not transcribed_text and "utterances" in result:
+        if not transcribed_text and "utterances" in result and result["utterances"]:
             # Join utterances if text is not directly present
             transcribed_text = " ".join([u.get("text", "") for u in result["utterances"]])
         
@@ -137,7 +145,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
         return {
             "text": transcribed_text or "",
             "status": "success",
-            "full_response": result if not transcribed_text else None, # Debug info if parsing fails
+            "full_response": result, # Always include full_response for now to debug
             "debug_size_bytes": len(content)
         }
     except Exception as e:
@@ -203,6 +211,25 @@ async def process_user_input(text: str):
         "status": "Agent reasoning complete",
         "context_facts": new_facts,
         "tasks_inferred": len(new_tasks)
+    }
+
+@app.post("/agent/monitor")
+async def monitor_websites(request: MockMonitorRequest):
+    """
+    Mock endpoint: Yutori agent monitoring official websites based on user input for a task.
+    """
+    # Record the API call
+    record_api_call("Yutori Monitoring", f"/monitor/task/{request.task_id}")
+    
+    # In a real scenario, this would trigger an async browsing task
+    # For the hackathon, we simulate that Yutori found something relevant
+    return {
+        "status": "success",
+        "message": f"Yutori has verified the requirements for task {request.task_id} using official sources.",
+        "updates": [
+            "Verified official California DMV documentation.",
+            "Cross-referenced with your arrival status (3 months ago)."
+        ]
     }
 
 @app.get("/agent/state")

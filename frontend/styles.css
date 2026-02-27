@@ -1,0 +1,112 @@
+/* 
+  LifeOps - Brutalist Signal
+  High-fidelity CSS for Cinematic Landing Page
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+:root {
+  --color-paper: #E8E4DD;
+  --color-signal: #E63B2E;
+  --color-offwhite: #F5F3EE;
+  --color-black: #111111;
+  
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-drama: 'DM Serif Display', serif;
+  --font-data: 'Space Mono', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-offwhite);
+  color: var(--color-black);
+  font-family: var(--font-heading);
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* Global Noise Overlay */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.05;
+}
+
+/* Custom Utilities */
+.font-drama { font-family: var(--font-drama); font-style: italic; }
+.font-data { font-family: var(--font-data); }
+
+.rounded-brutalist { border-radius: 2.5rem; }
+
+/* Magnetic Button Feel */
+.btn-magnetic {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+  border-radius: 3rem;
+}
+
+.btn-magnetic:hover {
+  transform: scale(1.03) translateY(-1px);
+}
+
+.btn-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-black);
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 0;
+}
+
+.btn-magnetic:hover .btn-layer {
+  transform: translateY(0);
+}
+
+.btn-text {
+  position: relative;
+  z-index: 10;
+}
+
+/* Hero Gradient */
+.hero-gradient {
+  background: linear-gradient(to top, var(--color-black) 0%, transparent 100%);
+}
+
+/* Scroll Animations */
+.fade-up {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+/* Card Effects */
+.card-stack {
+  position: relative;
+}
+
+.card-item {
+  position: sticky;
+  top: 10vh;
+  height: 80vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3rem;
+  background: var(--color-paper);
+  border: 1px solid rgba(0,0,0,0.1);
+  margin-bottom: 5vh;
+}
