@@ -417,13 +417,10 @@
                                 <div className="w-full md:w-64">
                                     {task.status !== 'completed' && (
                                         <button
-                                            onClick={() => {
-                                                const input = prompt("Provide information for " + task.title);
-                                                if (input) onSubmit(task, input);
-                                            }}
+                                            onClick={() => onSubmit(task, "proceed")}
                                             className="w-full btn-magnetic bg-signal text-white py-4 rounded-xl font-bold text-sm"
                                         >
-                                            <span className="btn-text">Execute Flow</span>
+                                            <span className="btn-text">Proceed</span>
                                         </button>
                                     )}
                                     {task.monitoredUpdates && (
