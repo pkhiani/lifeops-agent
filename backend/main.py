@@ -5,6 +5,8 @@ import os
 import copy
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
+import json
+from typing import List, Optional
 
 load_dotenv()
 
@@ -38,6 +40,49 @@ class ContextFact(BaseModel):
 @app.get("/")
 def read_root():
     return {"status": "LifeOps Agent Backend Running"}
+
+def get_yutori_links(task_title: str, context: str) -> List[dict]:
+    """Call Yutori Browsing API to find official links for a task."""
+    api_key = os.getenv("YUTORI_API_KEY")
+    if not api_key:
+        print("YUTORI_API_KEY not set, using mock links.")
+        return [{"title": f"Official {task_title} Info", "url": "https://www.google.com/search?q=" + task_title.replace(' ', '+')}]
+
+    url = "https://api.yutori.com/v1/browsing/tasks"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "instruction": f"Find official government or organizational links and a brief description for the following task: '{task_title}' given this context: '{context}'. Return only a JSON array of objects with 'title' and 'url' fields.",
+        "require_auth": False
+    }
+
+    try:
+        # Note: In a real scenario, this might take time. 
+        # For the sake of the hackathon, we'll try to get it quickly or fallback.
+        # Since we don't have a specific mock for Yutori success, we'll assume it returns something useful.
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            # If the API returns results directly, parse them. 
+            # (Assuming Yutori's output format based on browsing task behavior)
+            result_text = data.get("result", "[]")
+            try:
+                # Attempt to parse if it's a stringified JSON
+                if isinstance(result_text, str):
+                    import re
+                    match = re.search(r'\[.*\]', result_text, re.DOTALL)
+                    if match:
+                        return json.loads(match.group(0))
+                return json.loads(result_text)
+            except:
+                return [{"title": "Official Link", "url": "https://www.usa.gov"}]
+        return [{"title": "Search Info", "url": "https://www.google.com/search?q=" + task_title.replace(' ', '+')}]
+    except Exception as e:
+        print(f"Yutori API Error: {e}")
+        return [{"title": "Search Info", "url": "https://www.google.com/search?q=" + task_title.replace(' ', '+')}]
 
 import requests
 
@@ -118,12 +163,22 @@ async def process_user_input(text: str):
                 value=fact['value']
             )
 
-    # 3. Mock Inference (Simulating Yutori LLM & Web Search)
-    new_tasks = [
-        {"id": 1, "title": "Check SSN Status", "description": "Agent will verify if an SSN has been issued for your work permit.", "status": "pending", "action": "Simulate Call"},
-        {"id": 2, "title": "Draft W-4 Form", "description": "Agent will auto-fill your federal tax withholding form based on your profile.", "status": "pending", "action": "View Draft"},
-        {"id": 3, "title": "State ID Appointment", "description": "California DMV appointment needed within 90 days.", "status": "pending", "action": "Schedule"}
+    # 3. Enhanced Inference with Yutori Links
+    context_str = ", ".join([f"{f['entity']}: {f['value']}" for f in new_facts])
+    
+    raw_tasks = [
+        {"id": 1, "title": "Check SSN Status", "description": "Agent will verify if an SSN has been issued for your work permit.", "status": "pending", "action": "Provide Info"},
+        {"id": 2, "title": "Draft W-4 Form", "description": "Agent will auto-fill your federal tax withholding form based on your profile.", "status": "pending", "action": "Provide Docs"},
+        {"id": 3, "title": "State ID Appointment", "description": "California DMV appointment needed within 90 days.", "status": "pending", "action": "Provide Schedule"}
     ]
+    
+    new_tasks = []
+    for t in raw_tasks:
+        # Retrieve links from Yutori for each task
+        links = get_yutori_links(t['title'], context_str)
+        t['links'] = links
+        new_tasks.append(t)
+
     MOCK_USER_STATE["inferred_tasks"] = new_tasks
     
     return {

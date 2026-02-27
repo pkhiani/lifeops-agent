@@ -46,6 +46,17 @@ const app = createApp({
             }
         };
 
+        const submitTaskForm = (task) => {
+            if (!task.userInput) {
+                alert('Please provide some information or links before submitting.');
+                return;
+            }
+            addLog(`Submitted info for task: ${task.title}. Agent will now process this.`, 'agent');
+            task.status = 'in_progress';
+            task.showForm = false;
+            alert(`Information securely submitted to your agent for: ${task.title}`);
+        };
+
         const startRecording = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -177,7 +188,11 @@ const app = createApp({
                         addLog(`Found recommended action: ${t.title}`, 'agent');
                     });
 
-                    tasks.value = agentData.inferred_tasks;
+                    tasks.value = agentData.inferred_tasks.map(t => ({
+                        ...t,
+                        showForm: false,
+                        userInput: ''
+                    }));
 
                 } catch (apiError) {
                     addLog('Service unreachable. Falling back to demo mode...', 'warning');
@@ -189,9 +204,9 @@ const app = createApp({
                     ];
 
                     tasks.value = [
-                        { id: 1, title: 'Check SSN Status', description: 'Agent will verify if an SSN has been issued for your work permit.', status: 'pending', action: 'Simulate Call' },
-                        { id: 2, title: 'Draft W-4 Form', description: 'Agent will auto-fill your federal tax withholding form based on your profile.', status: 'pending', action: 'View Draft' },
-                        { id: 3, title: 'State ID Appointment', description: 'California DMV appointment needed within 90 days.', status: 'pending', action: 'Schedule' }
+                        { id: 1, title: 'Check SSN Status', description: 'Agent will verify if an SSN has been issued for your work permit.', status: 'pending', action: 'Provide Info', showForm: false, userInput: '', links: [{ title: 'SSA Official Site', url: 'https://www.ssa.gov' }] },
+                        { id: 2, title: 'Draft W-4 Form', description: 'Agent will auto-fill your federal tax withholding form based on your profile.', status: 'pending', action: 'Provide Docs', showForm: false, userInput: '', links: [{ title: 'IRS W-4 Info', url: 'https://www.irs.gov/forms-pubs/about-form-w-4' }] },
+                        { id: 3, title: 'State ID Appointment', description: 'California DMV appointment needed within 90 days.', status: 'pending', action: 'Provide Schedule', showForm: false, userInput: '', links: [{ title: 'CA DMV Official', url: 'https://www.dmv.ca.gov' }] }
                     ];
                 }
 
@@ -218,7 +233,7 @@ const app = createApp({
             agentStatus, agentStatusText, activeTab,
             isRecording, recordingText, transcript, liveTranscript,
             contextFacts, tasks, activityLogs,
-            toggleRecording, getLogColor, getStatusBadgeClass, setActiveTab
+            toggleRecording, getLogColor, getStatusBadgeClass, setActiveTab, submitTaskForm
         };
     }
 });

@@ -341,11 +341,35 @@
                                 </div>
                                 <p class="text-slate-600 text-sm leading-relaxed max-w-2xl mb-4">{{ task.description }}
                                 </p>
+                                <!-- Yutori Links Section -->
+                                <div v-if="task.links && task.links.length" class="flex flex-wrap gap-2 mb-4">
+                                    <a v-for="link in task.links" :key="link.url" :href="link.url" target="_blank"
+                                        class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
+                                        <i class="fas fa-external-link-alt mr-2"></i> {{ link.title }}
+                                    </a>
+                                </div>
                             </div>
 
-                            <div v-if="task.action" class="mt-4 sm:mt-0 sm:ml-6 shrink-0 z-10">
-                                <button
-                                    class="text-sm font-bold bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 px-6 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md focus:ring-4 focus:ring-blue-100">
+                            <div class="mt-4 sm:mt-0 sm:ml-6 shrink-0 z-10 w-full sm:w-auto">
+                                <div v-if="task.showForm"
+                                    class="mt-4 w-full sm:w-64 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner">
+                                    <label
+                                        class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Provide
+                                        required information</label>
+                                    <textarea v-model="task.userInput"
+                                        placeholder="Enter details or paste links here..."
+                                        class="w-full text-sm p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none h-20 mb-3"></textarea>
+                                    <div class="flex gap-2">
+                                        <button @click="task.showForm = false"
+                                            class="flex-1 text-xs font-bold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-lg transition-all">Cancel</button>
+                                        <button @click="submitTaskForm(task)"
+                                            class="flex-1 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 px-3 py-2 rounded-lg transition-all shadow-sm">Submit
+                                            securely</button>
+                                    </div>
+                                </div>
+                                <button v-else-if="task.status !== 'completed' && task.action"
+                                    @click="task.showForm = true"
+                                    class="text-sm font-bold bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 px-6 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md focus:ring-4 focus:ring-blue-100 whitespace-nowrap">
                                     {{ task.action }}
                                 </button>
                             </div>
