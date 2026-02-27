@@ -6,6 +6,7 @@ import copy
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
 import json
+import requests
 from typing import List, Optional
 
 load_dotenv()
@@ -28,6 +29,17 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
 # In-memory mock DB for MVP (Tasks only for now)
+# Personas matching frontend for task resolution
+PERSONAS = {
+    "CHINESE_NEW_ARRIVAL": {
+        "tasks": [
+            { "id": 101, "title": "Get US Phone Number" },
+            { "id": 102, "title": "Open Bank Account" },
+            { "id": 103, "title": "SEVIS Registration" }
+        ]
+    }
+}
+
 MOCK_USER_STATE = {
     "inferred_tasks": [],
     "activity_logs": [],
@@ -222,14 +234,51 @@ async def monitor_websites(request: MockMonitorRequest):
     record_api_call("Yutori Monitoring", f"/monitor/task/{request.task_id}")
     
     # In a real scenario, this would trigger an async browsing task
-    # For the hackathon, we simulate that Yutori found something relevant
+    # Find task title for better mock logs
+    task_title = "Unknown Task"
+    for t in MOCK_USER_STATE["inferred_tasks"]:
+        if t['id'] == request.task_id:
+            task_title = t['title']
+            break
+            
+    # Also check PERSONAS if not found in inferred_tasks (for the initial mock load)
+    if task_title == "Unknown Task":
+        for p in PERSONAS.values():
+            for t in p.get('tasks', []):
+                if t['id'] == request.task_id:
+                    task_title = t['title']
+                    break
+
+    # Generate task-specific updates
+    updates = [
+        "[YUTORI_BROWSER] Initializing secure browsing session...",
+        f"[SEARCH] Querying: 'official requirements for {task_title}'",
+        f"[ANALYZE] Parsing domain: {task_title.lower().replace(' ', '_')}.gov.us",
+        f"[VERIFY] Cross-referencing {task_title} criteria with user intake...",
+    ]
+
+    if "Visa" in task_title or "SSN" in task_title:
+        updates.extend([
+            "[COMPLIANCE] Checking USCIS federal database...",
+            "Verified federal immigration documentation matches."
+        ])
+    elif "DMV" in task_title or "ID" in task_title or "California" in task_title:
+        updates.extend([
+            "[LOCAL] Checking California DMV portal...",
+            "Verified real-time appointment availability."
+        ])
+    else:
+        updates.extend([
+            "[SCAN] Scanning organizational guidelines...",
+            "Verified documentation requirements."
+        ])
+
+    updates.append(f"[RESULT] Verification complete for {task_title}.")
+
     return {
         "status": "success",
-        "message": f"Yutori has verified the requirements for task {request.task_id} using official sources.",
-        "updates": [
-            "Verified official California DMV documentation.",
-            "Cross-referenced with your arrival status (3 months ago)."
-        ]
+        "message": f"Yutori has verified the requirements for {task_title} using official sources.",
+        "updates": updates
     }
 
 @app.get("/agent/state")

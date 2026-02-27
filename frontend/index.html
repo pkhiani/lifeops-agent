@@ -82,6 +82,39 @@
 
         const BACKEND_URL = 'https://lifeops-agent.onrender.com';
 
+        const PERSONAS = {
+            CHINESE_NEW_ARRIVAL: {
+                transcript: "我刚刚到达洛杉矶，我需要办一张手机卡和银行卡，还有租房子。我拿的是F1签证。",
+                facts: [
+                    { entity: 'Location', value: 'Los Angeles, CA' },
+                    { entity: 'Visa Status', value: 'F1 Student' },
+                    { entity: 'Arrival Date', value: 'Recent' }
+                ],
+                tasks: [
+                    { id: 101, title: 'Get US Phone Number', description: 'Visit a provider (T-Mobile/AT&T) with passport & I-20.', status: 'pending' },
+                    { id: 102, title: 'Open Bank Account', description: 'Required: Passport, I-20, proof of residence.', status: 'pending' },
+                    { id: 103, title: 'SEVIS Registration', description: 'Must check-in with the International Student Office.', status: 'pending' }
+                ],
+                logs: [
+                    { message: 'MODULATE_AUDIO_INGEST: SUCCESS [TRANSCRIPT_MATCH: 98%]', type: 'system' },
+                    { message: 'IDENTIFIED_LANGUAGE: MANDARIN (zh-CN) | REGION: SOUTH', type: 'agent' },
+                    { message: 'YUTORI_INTENT_ENGINE: ANALYZING_CROSS_CULTURAL_CONTEXT...', type: 'agent' },
+                    { message: 'EXTRACTED_FACTS: [F1_VISA_STATUS, LOS_ANGELES_GEO, RECENT_ARRIVAL_SIGNAL]', type: 'agent' },
+                    { message: 'TASK_INITIALIZED: SETUP_US_CONNECTIVITY [PHONE_CARD]', type: 'system' },
+                    { message: 'TASK_INITIALIZED: ESTABLISH_FINANCIAL_FOOTPRINT [BANK_ACC]', type: 'system' },
+                    { message: 'TASK_INITIALIZED: IMMIGRATION_COMPLIANCE [SEVIS_CHECKIN]', type: 'system' },
+                    { message: 'PROTOCOL_DEPLOYED: CHINESE_NEW_ARRIVAL_NAVIGATOR', type: 'agent' },
+                    { message: 'LOGISTICAL_MAPPING_COMPLETE: READY_FOR_EXECUTION', type: 'agent' }
+                ],
+                apiCalls: [
+                    { service: 'Modulate API', status: 'success' },
+                    { service: 'Yutori Engine', status: 'success' },
+                    { service: 'Google Maps API', status: 'success' },
+                    { service: 'SEVIS System', status: 'success' }
+                ]
+            }
+        };
+
         // --- Context & State Management ---
 
         const useAudioRecorder = (addLog, onProcessed) => {
@@ -303,7 +336,7 @@
             return <div id="cy" className="rounded-brutalist overflow-hidden border border-white/10 shadow-2xl"></div>;
         };
 
-        const Dashboard = ({ logs, onToggleRecord, isRecording, recordingText, transcript }) => (
+        const Dashboard = ({ logs, onToggleRecord, isRecording, recordingText, transcript, onLoadMock }) => (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
                 <div className="bg-black rounded-brutalist p-10 flex flex-col justify-between border border-white/10 shadow-2xl relative overflow-hidden group">
                     <div className="absolute inset-0 opacity-20 pointer-events-none">
@@ -324,6 +357,15 @@
                             <i data-lucide={isRecording ? "square" : "mic"} className={`w-12 h-12 ${isRecording ? 'text-white' : 'text-black'}`}></i>
                         </button>
                         <span className="font-data text-[12px] text-white tracking-[0.2em] font-bold">{recordingText.toUpperCase()}</span>
+
+                        {!isRecording && (
+                            <button
+                                onClick={() => onLoadMock('CHINESE_NEW_ARRIVAL')}
+                                className="mt-4 px-4 py-2 border border-white/20 rounded-full text-[10px] text-white/60 hover:text-white hover:border-white/40 transition-all font-data uppercase"
+                            >
+                                Run Mock: Chinese New Arrival
+                            </button>
+                        )}
                     </div>
 
                     <div className="relative z-10 bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[100px]">
@@ -384,10 +426,19 @@
                                             <span className="btn-text">Execute Flow</span>
                                         </button>
                                     )}
-                                    {task.monitoredInfo && (
-                                        <div className="bg-black/5 rounded-xl p-4 border border-black/5">
-                                            <p className="text-[10px] font-data text-black/40 mb-2 uppercase">VERIFIED_LOG</p>
-                                            <p className="text-xs text-black/60 leading-relaxed italic">{task.monitoredInfo}</p>
+                                    {task.monitoredUpdates && (
+                                        <div className="bg-black/5 rounded-xl p-4 border border-black/5 mt-4">
+                                            <p className="text-[10px] font-data text-black/40 mb-3 uppercase flex items-center gap-2">
+                                                <span className="w-1.5 h-1.5 bg-signal rounded-full animate-pulse"></span>
+                                                VERIFIED_LOG_STREAM
+                                            </p>
+                                            <div className="space-y-2">
+                                                {task.monitoredUpdates.map((update, idx) => (
+                                                    <p key={idx} className="text-[10px] font-data text-black/60 leading-relaxed border-l-2 border-black/5 pl-3 py-0.5">
+                                                        {update}
+                                                    </p>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -452,7 +503,12 @@
                         body: JSON.stringify({ task_id: task.id, user_input: input })
                     });
                     const data = await res.json();
-                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'completed', monitoredInfo: data.message } : t));
+                    setTasks(prev => prev.map(t => t.id === task.id ? {
+                        ...t,
+                        status: 'completed',
+                        monitoredInfo: data.message,
+                        monitoredUpdates: data.updates
+                    } : t));
                     addLog(`VERIFICATION_SUCCESS: ${task.title}`, 'agent');
                 } catch (err) {
                     addLog('VERIFICATION_TIMEOUT', 'error');
@@ -483,7 +539,27 @@
                 <div className="h-screen w-full flex bg-offwhite text-black overflow-hidden font-heading">
                     <Sidebar activeTab={activeTab} setTab={setTab} onExit={() => setView('landing')} />
                     <main className="flex-1 overflow-y-auto p-12 hide-scrollbar">
-                        {activeTab === 'dash' && <Dashboard logs={logs} isRecording={isRecording} recordingText={recordingText} onToggleRecord={isRecording ? stop : start} transcript={transcript} />}
+                        {activeTab === 'dash' && (
+                            <Dashboard
+                                logs={logs}
+                                isRecording={isRecording}
+                                recordingText={recordingText}
+                                onToggleRecord={isRecording ? stop : start}
+                                transcript={transcript}
+                                onLoadMock={(id) => {
+                                    const p = PERSONAS[id];
+                                    setTranscript(p.transcript);
+                                    setFacts(p.facts);
+                                    setTasks(p.tasks);
+                                    setApiCalls(p.apiCalls || []);
+                                    setLogs(prev => [
+                                        ...p.logs.map(l => ({ ...l, time: new Date().toLocaleTimeString() })),
+                                        ...prev
+                                    ]);
+                                    addLog(`MOCK_PROTOCOL_LOADED: ${id}`, 'system');
+                                }}
+                            />
+                        )}
                         {activeTab === 'tasks' && <TasksView tasks={tasks} onSubmit={submitTaskForm} />}
                         {activeTab === 'profile' && (
                             <div className="max-w-4xl mx-auto">
